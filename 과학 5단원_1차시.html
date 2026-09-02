@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 6학년 과학 - 우리 주변 식물을 관찰해 봅시다</title>
+    <style>
+        /* ----------------------------------------------------
+           전자칠판 1920x1080 최적화 및 기본 테마 설정
+           ---------------------------------------------------- */
+        @import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Gothic A1', 'Malgun Gothic', sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            color: #2e7d32;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 내장 이미지 경로 안내 주석
+           [필요한 이미지 파일 목록]
+           - images/tomato_all.png (토마토 전체)
+           - images/root.png (뿌리)
+           - images/stem.png (줄기)
+           - images/leaf.png (잎)
+           - images/flower.png (꽃)
+           - images/fruit.png (열매)
+           - images/dandelion.png (민들레)
+           - images/azalea.png (철쭉)
+           - images/pine.png (소나무)
+           - images/cherry.png (벚나무)
+           * 이미지가 없더라도 아래 인라인 SVG/CSS 그래픽으로 100% 작동합니다.
+        */
+
+        /* Header Navigation */
+        header {
+            height: 90px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 34px;
+            font-weight: 900;
+            color: #1b5e20;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 26px;
+            font-weight: 700;
+            padding: 12px 28px;
+            border-radius: 50px;
+            border: 4px solid #81c784;
+            background-color: #ffffff;
+            color: #2e7d32;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #66bb6a, 0 8px 15px rgba(0,0,0,0.1);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #66bb6a, 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-speech {
+            background-color: #fff9c4;
+            border-color: #fbc02d;
+            box-shadow: 0 6px 0 #fdd835;
+            color: #f57f17;
+        }
+
+        .btn-speech:active {
+            box-shadow: 0 2px 0 #fdd835;
+        }
+
+        .btn-primary {
+            background-color: #4caf50;
+            border-color: #388e3c;
+            color: white;
+            box-shadow: 0 6px 0 #2e7d32;
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 2px 0 #2e7d32;
+        }
+
+        .btn-large {
+            font-size: 36px;
+            padding: 20px 48px;
+            border-radius: 60px;
+        }
+
+        /* Main View Container */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+            position: relative;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Instruction Title Bar */
+        .instruction-box {
+            background: #ffffff;
+            border: 5px solid #a5d6a7;
+            border-radius: 30px;
+            padding: 16px 40px;
+            font-size: 38px;
+            font-weight: 900;
+            color: #1b5e20;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            text-align: center;
+        }
+
+        /* Grid / Flex Layout Helpers */
+        .card-grid {
+            display: grid;
+            gap: 30px;
+            width: 100%;
+            max-width: 1600px;
+            justify-content: center;
+        }
+
+        .plant-card {
+            background: white;
+            border: 5px solid #c8e6c9;
+            border-radius: 28px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+        }
+
+        .plant-card:hover, .plant-card:active {
+            transform: scale(1.05);
+            border-color: #4caf50;
+            box-shadow: 0 15px 30px rgba(76,175,80,0.3);
+        }
+
+        .plant-card svg, .plant-card img {
+            width: 220px;
+            height: 220px;
+            object-fit: contain;
+        }
+
+        .plant-card .label {
+            font-size: 34px;
+            font-weight: 900;
+            color: #2e7d32;
+            margin-top: 15px;
+        }
+
+        /* Choice Buttons for Quizzes */
+        .choice-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .choice-btn {
+            font-size: 40px;
+            font-weight: 900;
+            padding: 24px 60px;
+            border-radius: 35px;
+            background: white;
+            border: 6px solid #81c784;
+            color: #1b5e20;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #66bb6a, 0 10px 20px rgba(0,0,0,0.1);
+            transition: all 0.15s ease;
+            min-width: 220px;
+            text-align: center;
+        }
+
+        .choice-btn:active, .choice-btn.selected {
+            transform: translateY(6px);
+            box-shadow: 0 4px 0 #66bb6a;
+            background: #e8f5e9;
+        }
+
+        /* SVG Graphic Wrappers */
+        .svg-icon {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        /* Matching Activity (활동 2) Lines Overlay */
+        .matching-container {
+            display: flex;
+            justify-content: space-between;
+            width: 1400px;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .matching-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 2;
+        }
+
+        .matching-item {
+            width: 280px;
+            height: 120px;
+            background: white;
+            border: 5px solid #a5d6a7;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+        }
+
+        .matching-item.selected {
+            border-color: #ff9800;
+            background: #fff3e0;
+            transform: scale(1.05);
+        }
+
+        .matching-item.matched {
+            border-color: #4caf50;
+            background: #e8f5e9;
+            opacity: 0.8;
+            cursor: default;
+        }
+
+        #matching-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Canvas Particle Effects Overlay */
+        #fx-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Teacher Menu Modal */
+        .teacher-gear {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.15);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 500;
+            transition: background 0.2s;
+        }
+
+        .teacher-gear:hover {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .teacher-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .teacher-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            width: 600px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .teacher-modal-title {
+            font-size: 32px;
+            font-weight: 900;
+            color: #1b5e20;
+            border-bottom: 3px solid #c8e6c9;
+            padding-bottom: 10px;
+        }
+
+        /* Drag / Slot Placement Activity (활동 3 & 4) */
+        .target-board {
+            position: relative;
+            width: 500px;
+            height: 600px;
+            background: white;
+            border: 6px dashed #a5d6a7;
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px;
+        }
+
+        .drop-slot {
+            width: 200px;
+            height: 100px;
+            border: 4px dashed #90caf9;
+            border-radius: 20px;
+            background: #e3f2fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #1565c0;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .drop-slot.highlight {
+            background: #bbdefb;
+            border-color: #1e88e5;
+            transform: scale(1.05);
+        }
+
+        .draggable-card {
+            min-width: 160px;
+            height: 120px;
+            background: white;
+            border: 5px solid #81c784;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            touch-action: none;
+            padding: 10px;
+        }
+
+        .draggable-card:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        .draggable-card.selected-tap {
+            border-color: #ff9800;
+            background: #fff3e0;
+            box-shadow: 0 0 20px rgba(255,152,0,0.6);
+        }
+
+        /* Puzzle Board */
+        .puzzle-container {
+            display: flex;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .puzzle-slots-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 320px;
+            background: #ffffff;
+            border: 6px solid #a5d6a7;
+            border-radius: 25px;
+            padding: 15px;
+        }
+
+        .puzzle-slot {
+            height: 100px;
+            background: #f1f8e9;
+            border: 3px dashed #81c784;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #33691e;
+            font-weight: 700;
+        }
+
+        .puzzle-pieces-pool {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-wrap: wrap;
+            max-height: 560px;
+        }
+
+        /* Tomato Zoom Feature in Intro 2 */
+        .zoom-area-container {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .tomato-interactive-svg {
+            width: 420px;
+            height: 580px;
+            background: white;
+            border-radius: 30px;
+            border: 5px solid #a5d6a7;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .tomato-part-hotspot {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tomato-part-hotspot:hover {
+            filter: drop-shadow(0 0 12px rgba(76, 175, 80, 0.8));
+            opacity: 0.85;
+        }
+
+        .zoom-display-card {
+            width: 480px;
+            height: 520px;
+            background: white;
+            border: 6px solid #81c784;
+            border-radius: 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Summary Glow Effect */
+        .summary-highlight {
+            filter: drop-shadow(0 0 20px #ffeb3b) brightness(1.2);
+            transform: scale(1.08);
+            transition: all 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="header-title">
+            <span>🌱</span> 초등 6학년 과학: 식물의 구성
+        </div>
+        <div class="nav-buttons">
+            <button class="btn btn-speech" onclick="repeatCurrentSpeech()">
+                🔊 다시 듣기
+            </button>
+            <button class="btn" onclick="goToHome()">
+                🏠 처음으로
+            </button>
+            <button class="btn" onclick="prevStep()">
+                ↩ 이전
+            </button>
+            <button class="btn btn-primary" onclick="nextStep()">
+                ➡ 다음
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Views Container -->
+    <main id="app-container">
+
+        <!-- VIEW 0: Start Screen -->
+        <div id="view-start" class="view active">
+            <div style="text-align: center; background: white; padding: 50px 80px; border-radius: 40px; border: 8px solid #a5d6a7; box-shadow: 0 15px 35px rgba(0,0,0,0.1);">
+                <h1 style="font-size: 52px; color: #1b5e20; margin-bottom: 20px;">🌱 우리 주변 식물을 관찰해 봅시다</h1>
+                <p style="font-size: 32px; color: #388e3c; margin-bottom: 40px;">전자칠판을 터치하며 재미있게 공부해 보아요!</p>
+                <div style="margin-bottom: 40px;" id="start-plant-svg"></div>
+                <button class="btn btn-primary btn-large" style="margin: 0 auto;" onclick="goToStageMenu()">
+                    ▶ 시작하기
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: Main Stage Menu -->
+        <div id="view-stage-menu" class="view">
+            <div class="instruction-box">
+                공부할 단계를 선택하세요
+            </div>
+            <div style="display: flex; gap: 40px; margin-top: 20px;">
+                <div class="plant-card" style="width: 380px; height: 380px;" onclick="startFlow('intro')">
+                    <span style="font-size: 80px;">🌱</span>
+                    <div class="label" style="font-size: 42px;">1. 도입</div>
+                    <p style="font-size: 26px; color: #666; margin-top: 10px;">식물 탐색하기</p>
+                </div>
+                <div class="plant-card" style="width: 380px; height: 380px;" onclick="startFlow('main')">
+                    <span style="font-size: 80px;">🌿</span>
+                    <div class="label" style="font-size: 42px;">2. 전개</div>
+                    <p style="font-size: 26px; color: #666; margin-top: 10px;">재미있는 활동하기</p>
+                </div>
+                <div class="plant-card" style="width: 380px; height: 380px;" onclick="startFlow('outro')">
+                    <span style="font-size: 80px;">⭐</span>
+                    <div class="label" style="font-size: 42px;">3. 정리</div>
+                    <p style="font-size: 26px; color: #666; margin-top: 10px;">배운 내용 정리</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: Activity Menu Launcher (For Main Activities) -->
+        <div id="view-activity-menu" class="view">
+            <div class="instruction-box">
+                🌿 전개: 활동을 선택하세요
+            </div>
+            <div class="card-grid" style="grid-template-columns: repeat(3, 1fr); gap: 25px; max-width: 1400px;">
+                <div class="plant-card" onclick="loadActivity(1)">
+                    <span style="font-size: 50px;">👀</span>
+                    <div class="label">1. 이름 찾기</div>
+                </div>
+                <div class="plant-card" onclick="loadActivity(2)">
+                    <span style="font-size: 50px;">🔗</span>
+                    <div class="label">2. 바르게 연결하기</div>
+                </div>
+                <div class="plant-card" onclick="loadActivity(3)">
+                    <span style="font-size: 50px;">🧩</span>
+                    <div class="label">3. 제자리에 놓기</div>
+                </div>
+                <div class="plant-card" onclick="loadActivity(4)">
+                    <span style="font-size: 50px;">🌱</span>
+                    <div class="label">4. 식물 퍼즐</div>
+                </div>
+                <div class="plant-card" onclick="loadActivity(5)">
+                    <span style="font-size: 50px;">❓</span>
+                    <div class="label">5. 무엇일까요?</div>
+                </div>
+                <div class="plant-card" onclick="loadActivity(6)">
+                    <span style="font-size: 50px;">🔊</span>
+                    <div class="label">6. 소리 듣고 찾기</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: Intro 1 - Around Plants -->
+        <div id="view-intro-1" class="view">
+            <div class="instruction-box" id="intro1-text">
+                우리 주변에는 어떤 식물이 있을까요?
+            </div>
+            <div class="card-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="plant-card" onclick="speakPlantInfo('민들레')">
+                    <div id="svg-dandelion"></div>
+                    <div class="label">민들레</div>
+                </div>
+                <div class="plant-card" onclick="speakPlantInfo('철쭉')">
+                    <div id="svg-azalea"></div>
+                    <div class="label">철쭉</div>
+                </div>
+                <div class="plant-card" onclick="speakPlantInfo('소나무')">
+                    <div id="svg-pine"></div>
+                    <div class="label">소나무</div>
+                </div>
+                <div class="plant-card" onclick="speakPlantInfo('벚나무')">
+                    <div id="svg-cherry"></div>
+                    <div class="label">벚나무</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: Intro 2 - Observe Tomato Parts -->
+        <div id="view-intro-2" class="view">
+            <div class="instruction-box">
+                식물의 부분을 터치해서 자세히 살펴봐요!
+            </div>
+            <div class="zoom-area-container">
+                <div id="interactive-tomato-svg-wrapper"></div>
+                <div class="zoom-display-card" id="zoom-card">
+                    <div id="zoom-svg-target" style="width: 260px; height: 260px;"></div>
+                    <div id="zoom-label" style="font-size: 48px; font-weight: 900; color: #1b5e20; margin-top: 20px;">
+                        부분을 터치해보세요
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 5: Activity 1 - Name Quiz -->
+        <div id="view-act-1" class="view">
+            <div class="instruction-box" id="act1-title">
+                그림을 보고 알맞은 이름을 찾으세요.
+            </div>
+            <div style="background: white; border: 6px solid #a5d6a7; border-radius: 30px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.08);">
+                <div id="act1-img-target" style="width: 280px; height: 280px;"></div>
+            </div>
+            <div class="choice-container" id="act1-choices"></div>
+        </div>
+
+        <!-- VIEW 6: Activity 2 - Matching -->
+        <div id="view-act-2" class="view">
+            <div class="instruction-box">
+                그림과 이름을 바르게 연결해 보세요.
+            </div>
+            <div class="matching-container" id="act2-container">
+                <svg id="matching-svg"></svg>
+                <div class="matching-column" id="act2-left-col"></div>
+                <div class="matching-column" id="act2-right-col"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 7: Activity 3 - Place in Slots -->
+        <div id="view-act-3" class="view">
+            <div class="instruction-box">
+                식물의 알맞은 제자리에 놓아 보세요.
+            </div>
+            <div style="display: flex; gap: 60px; align-items: center;">
+                <div class="target-board" id="act3-board">
+                    <div class="drop-slot" data-part="꽃">🌸 꽃 위치</div>
+                    <div class="drop-slot" data-part="열매">🍅 열매 위치</div>
+                    <div class="drop-slot" data-part="잎">🌿 잎 위치</div>
+                    <div class="drop-slot" data-part="줄기">🌱 줄기 위치</div>
+                    <div class="drop-slot" data-part="뿌리">🌱 뿌리 위치</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 15px;" id="act3-cards"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 8: Activity 4 - Tomato Puzzle -->
+        <div id="view-act-4" class="view">
+            <div class="instruction-box">
+                토마토 퍼즐을 맞추어 완성하세요.
+            </div>
+            <div class="puzzle-container">
+                <div class="puzzle-slots-column" id="puzzle-slots">
+                    <div class="puzzle-slot" data-part="꽃">1. 꽃</div>
+                    <div class="puzzle-slot" data-part="열매">2. 열매</div>
+                    <div class="puzzle-slot" data-part="잎">3. 잎</div>
+                    <div class="puzzle-slot" data-part="줄기">4. 줄기</div>
+                    <div class="puzzle-slot" data-part="뿌리">5. 뿌리</div>
+                </div>
+                <div class="puzzle-pieces-pool" id="puzzle-pool"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 9: Activity 5 - What is it? (2 options) -->
+        <div id="view-act-5" class="view">
+            <div class="instruction-box">
+                그림을 보고 무엇인지 맞혀 보세요!
+            </div>
+            <div style="background: white; border: 6px solid #81c784; border-radius: 30px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
+                <div id="act5-img-target" style="width: 300px; height: 300px;"></div>
+            </div>
+            <div class="choice-container" id="act5-choices"></div>
+        </div>
+
+        <!-- VIEW 10: Activity 6 - Listen and Find -->
+        <div id="view-act-6" class="view">
+            <div class="instruction-box" id="act6-instruction">
+                🔊 소리를 듣고 알맞은 그림을 찾으세요!
+            </div>
+            <div style="display: flex; gap: 40px; margin-top: 30px;" id="act6-cards-container"></div>
+        </div>
+
+        <!-- VIEW 11: Outro 1 - Review 5 Parts -->
+        <div id="view-outro-1" class="view">
+            <div class="instruction-box">
+                식물의 5가지 부분을 다시 확인해봐요.
+            </div>
+            <div style="display: flex; gap: 50px; align-items: center;">
+                <div id="outro1-tomato-svg" style="width: 380px; height: 520px; background: white; border-radius: 30px; padding: 10px; border: 5px solid #a5d6a7;"></div>
+                <div style="display: flex; flex-direction: column; gap: 15px;" id="outro1-labels-list"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 12: Outro 2 - Final Simple Quiz -->
+        <div id="view-outro-2" class="view">
+            <div class="instruction-box" id="outro2-progress">
+                ⭐ 정리 퀴즈 (1 / 5)
+            </div>
+            <div style="display: flex; gap: 50px; align-items: center; margin-top: 20px;">
+                <div style="background: white; border: 6px solid #81c784; border-radius: 30px; padding: 20px;">
+                    <div id="outro2-img-target" style="width: 260px; height: 260px;"></div>
+                </div>
+                <div class="choice-container" id="outro2-choices" style="flex-direction: column; gap: 20px;"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 13: Outro 3 - Conclusion & Finish Celebration -->
+        <div id="view-outro-3" class="view">
+            <div class="instruction-box">
+                오늘 배운 내용을 읽어 볼까요?
+            </div>
+            <div style="display: flex; gap: 50px; align-items: center; background: white; padding: 40px; border-radius: 40px; border: 6px solid #a5d6a7; box-shadow: 0 15px 35px rgba(0,0,0,0.08);">
+                <div id="outro3-tomato-svg" style="width: 320px; height: 450px;"></div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 30px;">
+                    <div id="outro3-text" style="font-size: 46px; font-weight: 900; color: #1b5e20; text-align: center; line-height: 1.5;">
+                        식물에는<br>
+                        <span id="txt-root">뿌리</span>, <span id="txt-stem">줄기</span>, <span id="txt-leaf">잎</span>, <span id="txt-flower">꽃</span>, <span id="txt-fruit">열매</span>가 있어요.
+                    </div>
+                    <button class="btn btn-primary btn-large" onclick="celebrateFinish()">
+                        🌟 오늘 공부 끝!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Canvas Animation Overlay for Confetti & Stars -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- Teacher Settings Trigger Gear -->
+    <div class="teacher-gear" onclick="toggleTeacherModal()">⚙</div>
+
+    <!-- Teacher Modal -->
+    <div class="teacher-modal" id="teacher-modal">
+        <div class="teacher-modal-content">
+            <div class="teacher-modal-title">⚙ 교사 전용 메뉴</div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 24px; font-weight: bold;">난이도 설정:</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" id="diff-easy-btn" onclick="setDifficulty('easy')">😊 쉬움</button>
+                    <button class="btn" id="diff-normal-btn" onclick="setDifficulty('normal')">🙂 보통</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 24px; font-weight: bold;">음성 안내:</span>
+                <button class="btn" id="audio-toggle-btn" onclick="toggleAudio()">🔊 ON</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="resetStudentSession()">
+                    🔄 새 학생 시작 (모든 상태 초기화)
+                </button>
+                <button class="btn" onclick="restartCurrentStage()">
+                    ↺ 현재 활동 다시 시작
+                </button>
+            </div>
+
+            <button class="btn" style="margin-top: 15px; align-self: flex-end;" onclick="toggleTeacherModal()">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ----------------------------------------------------
+           1. 오디오 합성 & Web Speech API (TTS) 모듈
+           ---------------------------------------------------- */
+        let audioEnabled = true;
+        let speechSynthesisVoice = null;
+        let currentDifficulty = 'easy'; // 'easy' or 'normal'
+
+        // Web Audio API Sound Effects Synthesizer
+        const AudioFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playCorrect() {
+                if (!audioEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                // Ding-Dong Sound
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'sine';
+
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                osc1.frequency.setValueAtTime(659.25, now + 0.15); // E5
+
+                osc2.frequency.setValueAtTime(1046.50, now);
+                osc2.frequency.setValueAtTime(1318.51, now + 0.15);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.8);
+                osc2.stop(now + 0.8);
+            },
+            playWrong() {
+                if (!audioEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.setValueAtTime(180, now + 0.15);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            },
+            playFanfare() {
+                if (!audioEnabled) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (idx * 0.12);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                });
+            }
+        };
+
+        // Web Speech API (TTS Wrapper)
+        let lastSpokenText = "";
+
+        function speak(text, force = false) {
+            if (!audioEnabled) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop previous
+                lastSpokenText = text;
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.85; // 천천히 읽기 (특수교육 최적화)
+                utterance.pitch = 1.0;
+
+                // Voice Selection
+                const voices = window.speechSynthesis.getVoices();
+                const koVoice = voices.find(v => v.lang.includes('ko') || v.lang.includes('KO'));
+                if (koVoice) utterance.voice = koVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function repeatCurrentSpeech() {
+            if (lastSpokenText) {
+                speak(lastSpokenText, true);
+            }
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => {
+            // Pre-load voices
+            window.speechSynthesis.getVoices();
+        };
+
+        /* ----------------------------------------------------
+           2. SVG 인라인 백업 그래픽 템플릿 생성기
+           ---------------------------------------------------- */
+        const PlantSVG = {
+            tomatoAll: `
+                <svg viewBox="0 0 300 450" width="100%" height="100%">
+                    <!-- Root -->
+                    <path d="M150 350 Q130 380 110 430 M150 350 Q160 390 180 440 M150 350 Q150 400 140 445 M150 370 Q170 410 200 430 M150 370 Q120 400 90 420" 
+                          stroke="#8d6e63" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <!-- Stem -->
+                    <path d="M150 360 Q145 250 150 80" stroke="#4caf50" stroke-width="14" fill="none" stroke-linecap="round"/>
+                    <!-- Leaves -->
+                    <path d="M148 280 Q100 270 70 290 Q110 320 148 290" fill="#66bb6a" stroke="#2e7d32" stroke-width="3"/>
+                    <path d="M152 240 Q200 220 230 250 Q190 280 152 250" fill="#66bb6a" stroke="#2e7d32" stroke-width="3"/>
+                    <path d="M148 180 Q90 160 60 190 Q110 210 148 190" fill="#66bb6a" stroke="#2e7d32" stroke-width="3"/>
+                    <!-- Flower -->
+                    <g transform="translate(180, 110) scale(0.7)">
+                        <path d="M0 -20 L6 -6 L20 -6 L9 3 L14 18 L0 8 L-14 18 L-9 3 L-20 -6 L-6 -6 Z" fill="#ffee58" stroke="#fbc02d" stroke-width="3"/>
+                    </g>
+                    <!-- Fruit (Tomato) -->
+                    <circle cx="150" cy="180" r="32" fill="#f44336" stroke="#c62828" stroke-width="4"/>
+                    <path d="M150 148 L145 156 L155 156 Z" fill="#388e3c"/>
+                </svg>
+            `,
+            root: `
+                <svg viewBox="0 0 200 200" width="100%" height="100%">
+                    <rect width="200" height="200" rx="20" fill="#efebe9"/>
+                    <path d="M100 30 Q90 90 70 170 M100 30 Q110 100 130 180 M100 80 Q130 120 160 160 M100 90 Q60 130 40 170 M100 120 Q110 150 100 190" 
+                          stroke="#795548" stroke-width="7" fill="none" stroke-linecap="round"/>
+                </svg>
+            `,
+            stem: `
+                <svg viewBox="0 0 200 200" width="100%" height="100%">
+                    <rect width="200" height="200" rx="20" fill="#f1f8e9"/>
+                    <path d="M100 20 Q95 100 100 180" stroke="#4caf50" stroke-width="22" fill="none" stroke-linecap="round"/>
+                    <path d="M100 80 Q130 70 150 80" stroke="#4caf50" stroke-width="10" fill="none"/>
+                    <path d="M100 130 Q70 120 50 130" stroke="#4caf50" stroke-width="10" fill="none"/>
+                </svg>
+            `,
+            leaf: `
+                <svg viewBox="0 0 200 200" width="100%" height="100%">
+                    <rect width="200" height="200" rx="20" fill="#f1f8e9"/>
+                    <path d="M40 160 Q100 30 170 40 Q160 110 40 160 Z" fill="#66bb6a" stroke="#2e7d32" stroke-width="5"/>
+                    <path d="M40 160 Q100 85 170 40" stroke="#2e7d32" stroke-width="4" fill="none"/>
+                </svg>
+            `,
+            flower: `
+                <svg viewBox="0 0 200 200" width="100%" height="100%">
+                    <rect width="200" height="200" rx="20" fill="#fffde7"/>
+                    <g transform="translate(100,100) scale(2.2)">
+                        <path d="M0 -25 L8 -8 L25 -8 L11 4 L16 22 L0 10 L-16 22 L-11 4 L-25 -8 L-8 -8 Z" fill="#ffee58" stroke="#fbc02d" stroke-width="2"/>
+                        <circle cx="0" cy="0" r="5" fill="#f57f17"/>
+                    </g>
+                </svg>
+            `,
+            fruit: `
+                <svg viewBox="0 0 200 200" width="100%" height="100%">
+                    <rect width="200" height="200" rx="20" fill="#ffebee"/>
+                    <circle cx="100" cy="110" r="65" fill="#e53935" stroke="#b71c1c" stroke-width="6"/>
+                    <path d="M100 45 L90 60 L110 60 Z" fill="#4caf50"/>
+                    <path d="M100 45 L80 40 M100 45 L120 40 M100 45 L100 25" stroke="#388e3c" stroke-width="6" stroke-linecap="round"/>
+                </svg>
+            `,
+            dandelion: `
+                <svg viewBox="0 0 200 200">
+                    <rect width="200" height="200" rx="20" fill="#fffde7"/>
+                    <circle cx="100" cy="80" r="45" fill="#ffeb3b" stroke="#fbc02d" stroke-width="4"/>
+                    <path d="M100 125 L100 180" stroke="#4caf50" stroke-width="10"/>
+                </svg>
+            `,
+            azalea: `
+                <svg viewBox="0 0 200 200">
+                    <rect width="200" height="200" rx="20" fill="#fce4ec"/>
+                    <circle cx="100" cy="80" r="50" fill="#f06292" stroke="#c2185b" stroke-width="4"/>
+                    <path d="M100 130 L100 180" stroke="#8d6e63" stroke-width="10"/>
+                </svg>
+            `,
+            pine: `
+                <svg viewBox="0 0 200 200">
+                    <rect width="200" height="200" rx="20" fill="#e8f5e9"/>
+                    <polygon points="100,30 50,110 150,110" fill="#2e7d32"/>
+                    <polygon points="100,70 40,140 160,140" fill="#1b5e20"/>
+                    <rect x="85" y="140" width="30" height="40" fill="#5d4037"/>
+                </svg>
+            `,
+            cherry: `
+                <svg viewBox="0 0 200 200">
+                    <rect width="200" height="200" rx="20" fill="#f3e5f5"/>
+                    <circle cx="100" cy="80" r="55" fill="#f8bbd0" stroke="#e91e63" stroke-width="4"/>
+                    <rect x="90" y="135" width="20" height="45" fill="#6d4c41"/>
+                </svg>
+            `
+        };
+
+        /* ----------------------------------------------------
+           3. 애플리케이션 상태 관리 및 라우팅
+           ---------------------------------------------------- */
+        const STAGES = [
+            'view-start',
+            'view-stage-menu',
+            'view-intro-1',
+            'view-intro-2',
+            'view-activity-menu',
+            'view-act-1',
+            'view-act-2',
+            'view-act-3',
+            'view-act-4',
+            'view-act-5',
+            'view-act-6',
+            'view-outro-1',
+            'view-outro-2',
+            'view-outro-3'
+        ];
+
+        let currentStageIndex = 0;
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.classList.add('active');
+                currentStageIndex = STAGES.indexOf(viewId);
+                onStageLoaded(viewId);
+            }
+        }
+
+        function goToHome() {
+            showView('view-stage-menu');
+            speak("공부할 단계를 선택하세요.");
+        }
+
+        function goToStageMenu() {
+            showView('view-stage-menu');
+            speak("도입, 전개, 정리 중 원하는 단계를 선택해 보세요.");
+        }
+
+        function nextStep() {
+            if (currentStageIndex < STAGES.length - 1) {
+                showView(STAGES[currentStageIndex + 1]);
+            }
+        }
+
+        function prevStep() {
+            if (currentStageIndex > 0) {
+                showView(STAGES[currentStageIndex - 1]);
+            }
+        }
+
+        function startFlow(flowName) {
+            if (flowName === 'intro') showView('view-intro-1');
+            else if (flowName === 'main') showView('view-activity-menu');
+            else if (flowName === 'outro') showView('view-outro-1');
+        }
+
+        function onStageLoaded(viewId) {
+            switch (viewId) {
+                case 'view-start':
+                    document.getElementById('start-plant-svg').innerHTML = PlantSVG.tomatoAll;
+                    speak("우리 주변 식물을 관찰해 봅시다.");
+                    break;
+                case 'view-intro-1':
+                    initIntro1();
+                    break;
+                case 'view-intro-2':
+                    initIntro2();
+                    break;
+                case 'view-act-1':
+                    initActivity1();
+                    break;
+                case 'view-act-2':
+                    initActivity2();
+                    break;
+                case 'view-act-3':
+                    initActivity3();
+                    break;
+                case 'view-act-4':
+                    initActivity4();
+                    break;
+                case 'view-act-5':
+                    initActivity5();
+                    break;
+                case 'view-act-6':
+                    initActivity6();
+                    break;
+                case 'view-outro-1':
+                    initOutro1();
+                    break;
+                case 'view-outro-2':
+                    initOutro2();
+                    break;
+                case 'view-outro-3':
+                    initOutro3();
+                    break;
+            }
+        }
+
+        /* ----------------------------------------------------
+           4. 도입 활동 로직
+           ---------------------------------------------------- */
+        function initIntro1() {
+            document.getElementById('svg-dandelion').innerHTML = PlantSVG.dandelion;
+            document.getElementById('svg-azalea').innerHTML = PlantSVG.azalea;
+            document.getElementById('svg-pine').innerHTML = PlantSVG.pine;
+            document.getElementById('svg-cherry').innerHTML = PlantSVG.cherry;
+            speak("우리 주변에는 어떤 식물이 있을까요? 그림을 터치해 보세요.");
+        }
+
+        function speakPlantInfo(name) {
+            speak(name + "!");
+        }
+
+        function initIntro2() {
+            const wrapper = document.getElementById('interactive-tomato-svg-wrapper');
+            wrapper.innerHTML = `
+                <svg viewBox="0 0 300 450" class="tomato-interactive-svg">
+                    <!-- Root Hotspot -->
+                    <g class="tomato-part-hotspot" onclick="zoomPart('뿌리')">
+                        <path d="M150 350 Q130 380 110 430 M150 350 Q160 390 180 440 M150 350 Q150 400 140 445 M150 370 Q170 410 200 430" 
+                              stroke="#8d6e63" stroke-width="12" fill="none"/>
+                    </g>
+                    <!-- Stem Hotspot -->
+                    <g class="tomato-part-hotspot" onclick="zoomPart('줄기')">
+                        <path d="M150 360 Q145 250 150 80" stroke="#4caf50" stroke-width="20" fill="none"/>
+                    </g>
+                    <!-- Leaf Hotspot -->
+                    <g class="tomato-part-hotspot" onclick="zoomPart('잎')">
+                        <path d="M148 280 Q100 270 70 290 Q110 320 148 290" fill="#66bb6a" stroke="#2e7d32" stroke-width="4"/>
+                        <path d="M152 240 Q200 220 230 250 Q190 280 152 250" fill="#66bb6a" stroke="#2e7d32" stroke-width="4"/>
+                    </g>
+                    <!-- Flower Hotspot -->
+                    <g class="tomato-part-hotspot" onclick="zoomPart('꽃')">
+                        <circle cx="180" cy="110" r="28" fill="#ffee58" stroke="#fbc02d" stroke-width="4"/>
+                    </g>
+                    <!-- Fruit Hotspot -->
+                    <g class="tomato-part-hotspot" onclick="zoomPart('열매')">
+                        <circle cx="150" cy="180" r="38" fill="#f44336" stroke="#c62828" stroke-width="4"/>
+                    </g>
+                </svg>
+            `;
+            speak("식물의 부분을 터치해서 자세히 살펴봐요.");
+        }
+
+        function zoomPart(partName) {
+            const targetSvg = document.getElementById('zoom-svg-target');
+            const targetLabel = document.getElementById('zoom-label');
+
+            targetLabel.innerText = partName;
+            if (partName === '뿌리') targetSvg.innerHTML = PlantSVG.root;
+            else if (partName === '줄기') targetSvg.innerHTML = PlantSVG.stem;
+            else if (partName === '잎') targetSvg.innerHTML = PlantSVG.leaf;
+            else if (partName === '꽃') targetSvg.innerHTML = PlantSVG.flower;
+            else if (partName === '열매') targetSvg.innerHTML = PlantSVG.fruit;
+
+            speak(partName + "입니다.");
+        }
+
+        /* ----------------------------------------------------
+           5. 전개 활동 로직 (활동 1 ~ 6)
+           ---------------------------------------------------- */
+        function loadActivity(num) {
+            showView('view-act-' + num);
+        }
+
+        // 활동 1: 그림 보고 이름 찾기
+        const act1Data = [
+            { name: '꽃', svg: PlantSVG.flower },
+            { name: '뿌리', svg: PlantSVG.root },
+            { name: '열매', svg: PlantSVG.fruit },
+            { name: '줄기', svg: PlantSVG.stem },
+            { name: '잎', svg: PlantSVG.leaf }
+        ];
+        let act1Index = 0;
+
+        function initActivity1() {
+            act1Index = 0;
+            renderAct1Question();
+        }
+
+        function renderAct1Question() {
+            const item = act1Data[act1Index];
+            document.getElementById('act1-img-target').innerHTML = item.svg;
+            speak("그림을 보고 알맞은 이름을 찾으세요.");
+
+            const choicesContainer = document.getElementById('act1-choices');
+            choicesContainer.innerHTML = '';
+
+            let choices = ['뿌리', '줄기', '잎', '꽃', '열매'];
+            if (currentDifficulty === 'easy') {
+                choices = [item.name, choices.find(c => c !== item.name)].sort(() => Math.random() - 0.5);
+            } else {
+                choices = ['뿌리', '꽃', '열매'];
+                if (!choices.includes(item.name)) choices[0] = item.name;
+                choices.sort(() => Math.random() - 0.5);
+            }
+
+            choices.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = c;
+                btn.onclick = () => checkAct1(c, item.name);
+                choicesContainer.appendChild(btn);
+            });
+        }
+
+        function checkAct1(selected, correct) {
+            if (selected === correct) {
+                AudioFX.playCorrect();
+                triggerStars();
+                speak("맞았어요! " + correct + "이에요.");
+                setTimeout(() => {
+                    act1Index = (act1Index + 1) % act1Data.length;
+                    renderAct1Question();
+                }, 1800);
+            } else {
+                AudioFX.playWrong();
+                speak("다시 한번 찾아볼까요?");
+            }
+        }
+
+        // 활동 2: 그림과 이름 바르게 연결하기 (터치-터치 방식)
+        let act2SelectedLeft = null;
+        let act2Matches = {};
+
+        function initActivity2() {
+            act2SelectedLeft = null;
+            act2Matches = {};
+            const leftCol = document.getElementById('act2-left-col');
+            const rightCol = document.getElementById('act2-right-col');
+            const svg = document.getElementById('matching-svg');
+            svg.innerHTML = '';
+
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            const parts = [
+                { id: 'p1', name: '꽃', svg: PlantSVG.flower },
+                { id: 'p2', name: '뿌리', svg: PlantSVG.root },
+                { id: 'p3', name: '열매', svg: PlantSVG.fruit },
+                { id: 'p4', name: '줄기', svg: PlantSVG.stem },
+                { id: 'p5', name: '잎', svg: PlantSVG.leaf }
+            ];
+
+            const namesShuffled = [...parts].sort(() => Math.random() - 0.5);
+
+            parts.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'matching-item';
+                item.dataset.id = p.id;
+                item.dataset.name = p.name;
+                item.innerHTML = `<div style="width:80px; height:80px;">${p.svg}</div>`;
+                item.onclick = () => selectAct2Left(item);
+                leftCol.appendChild(item);
+            });
+
+            namesShuffled.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'matching-item';
+                item.dataset.name = p.name;
+                item.innerText = p.name;
+                item.onclick = () => selectAct2Right(item);
+                rightCol.appendChild(item);
+            });
+
+            speak("그림과 이름을 바르게 연결해 보세요.");
+        }
+
+        function selectAct2Left(elem) {
+            if (elem.classList.contains('matched')) return;
+            document.querySelectorAll('#act2-left-col .matching-item').forEach(i => i.classList.remove('selected'));
+            elem.classList.add('selected');
+            act2SelectedLeft = elem;
+            speak(elem.dataset.name);
+        }
+
+        function selectAct2Right(elem) {
+            if (!act2SelectedLeft || elem.classList.contains('matched')) return;
+
+            const leftName = act2SelectedLeft.dataset.name;
+            const rightName = elem.dataset.name;
+
+            if (leftName === rightName) {
+                AudioFX.playCorrect();
+                speak("잘했어요!");
+                act2SelectedLeft.classList.remove('selected');
+                act2SelectedLeft.classList.add('matched');
+                elem.classList.add('matched');
+
+                drawMatchingLine(act2SelectedLeft, elem, '#4caf50');
+                act2Matches[leftName] = true;
+
+                if (Object.keys(act2Matches).length === 5) {
+                    setTimeout(() => {
+                        AudioFX.playFanfare();
+                        triggerStars();
+                        speak("모두 연결했어요!");
+                    }, 800);
+                }
+            } else {
+                AudioFX.playWrong();
+                speak("다시 찾아보세요.");
+                drawMatchingLine(act2SelectedLeft, elem, '#f44336', true);
+            }
+            act2SelectedLeft = null;
+        }
+
+        function drawMatchingLine(leftElem, rightElem, color, removeDelay = false) {
+            const svg = document.getElementById('matching-svg');
+            const rectContainer = document.getElementById('act2-container').getBoundingClientRect();
+            const r1 = leftElem.getBoundingClientRect();
+            const r2 = rightElem.getBoundingClientRect();
+
+            const x1 = r1.right - rectContainer.left;
+            const y1 = r1.top + r1.height / 2 - rectContainer.top;
+            const x2 = r2.left - rectContainer.left;
+            const y2 = r2.top + r2.height / 2 - rectContainer.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '8');
+            line.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(line);
+
+            if (removeDelay) {
+                setTimeout(() => line.remove(), 1000);
+            }
+        }
+
+        // 활동 3: 제자리에 놓기 (클릭-클릭 & 드래그)
+        let selectedAct3Card = null;
+
+        function initActivity3() {
+            selectedAct3Card = null;
+            const cardsContainer = document.getElementById('act3-cards');
+            cardsContainer.innerHTML = '';
+
+            const parts = [
+                { name: '꽃', svg: PlantSVG.flower },
+                { name: '열매', svg: PlantSVG.fruit },
+                { name: '잎', svg: PlantSVG.leaf },
+                { name: '줄기', svg: PlantSVG.stem },
+                { name: '뿌리', svg: PlantSVG.root }
+            ].sort(() => Math.random() - 0.5);
+
+            parts.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'draggable-card';
+                card.dataset.part = p.name;
+                card.innerHTML = `<div style="width:70px; height:70px;">${p.svg}</div><span style="font-weight:bold; font-size:22px;">${p.name}</span>`;
+                card.onclick = () => selectAct3Card(card);
+                cardsContainer.appendChild(card);
+            });
+
+            document.querySelectorAll('#act3-board .drop-slot').forEach(slot => {
+                slot.innerHTML = slot.dataset.part + ' 위치';
+                slot.style.background = '#e3f2fd';
+                slot.onclick = () => placeAct3Card(slot);
+            });
+
+            speak("식물의 제자리를 찾아 연결하거나 눌러 보세요.");
+        }
+
+        function selectAct3Card(card) {
+            document.querySelectorAll('.draggable-card').forEach(c => c.classList.remove('selected-tap'));
+            card.classList.add('selected-tap');
+            selectedAct3Card = card;
+            speak(card.dataset.part);
+        }
+
+        function placeAct3Card(slot) {
+            if (!selectedAct3Card) return;
+
+            if (slot.dataset.part === selectedAct3Card.dataset.part) {
+                AudioFX.playCorrect();
+                speak(slot.dataset.part + "!");
+                slot.innerHTML = `<span style="font-size:28px; font-weight:900; color:#2e7d32;">✅ ${slot.dataset.part}</span>`;
+                slot.style.background = '#c8e6c9';
+                selectedAct3Card.remove();
+                selectedAct3Card = null;
+
+                if (document.getElementById('act3-cards').children.length === 0) {
+                    setTimeout(() => {
+                        AudioFX.playFanfare();
+                        triggerStars();
+                        speak("참 잘했어요! 제자리를 모두 찾았어요.");
+                    }, 500);
+                }
+            } else {
+                AudioFX.playWrong();
+                speak("다시 시도해 보세요.");
+            }
+        }
+
+        // 활동 4: 토마토 퍼즐
+        let act4SelectedPiece = null;
+
+        function initActivity4() {
+            act4SelectedPiece = null;
+            const pool = document.getElementById('puzzle-pool');
+            pool.innerHTML = '';
+
+            const pieces = [
+                { name: '꽃', svg: PlantSVG.flower },
+                { name: '열매', svg: PlantSVG.fruit },
+                { name: '잎', svg: PlantSVG.leaf },
+                { name: '줄기', svg: PlantSVG.stem },
+                { name: '뿌리', svg: PlantSVG.root }
+            ].sort(() => Math.random() - 0.5);
+
+            pieces.forEach(p => {
+                const piece = document.createElement('div');
+                piece.className = 'draggable-card';
+                piece.dataset.part = p.name;
+                piece.style.width = '180px';
+                piece.innerHTML = `<div style="width:70px; height:70px;">${p.svg}</div><span style="font-size:22px; font-weight:bold;">${p.name} 조각</span>`;
+                piece.onclick = () => {
+                    document.querySelectorAll('#puzzle-pool .draggable-card').forEach(c => c.classList.remove('selected-tap'));
+                    piece.classList.add('selected-tap');
+                    act4SelectedPiece = piece;
+                    speak(p.name + " 조각");
+                };
+                pool.appendChild(piece);
+            });
+
+            document.querySelectorAll('#puzzle-slots .puzzle-slot').forEach(slot => {
+                slot.innerText = slot.dataset.part + ' 조각 자리';
+                slot.style.background = '#f1f8e9';
+                slot.onclick = () => {
+                    if (!act4SelectedPiece) return;
+                    if (slot.dataset.part === act4SelectedPiece.dataset.part) {
+                        AudioFX.playCorrect();
+                        slot.innerText = '✅ ' + slot.dataset.part + ' 완성';
+                        slot.style.background = '#c8e6c9';
+                        act4SelectedPiece.remove();
+                        act4SelectedPiece = null;
+
+                        if (pool.children.length === 0) {
+                            setTimeout(() => {
+                                AudioFX.playFanfare();
+                                triggerStars();
+                                speak("토마토 식물을 완성했어요!");
+                            }, 500);
+                        }
+                    } else {
+                        AudioFX.playWrong();
+                        speak("한 번 더 해볼까요?");
+                    }
+                };
+            });
+
+            speak("토마토 퍼즐을 맞추어 완성하세요.");
+        }
+
+        // 활동 5: 무엇일까요? (2개 선택지)
+        let act5Index = 0;
+        const act5Questions = [
+            { name: '뿌리', svg: PlantSVG.root, wrong: '열매' },
+            { name: '꽃', svg: PlantSVG.flower, wrong: '잎' },
+            { name: '열매', svg: PlantSVG.fruit, wrong: '줄기' },
+            { name: '줄기', svg: PlantSVG.stem, wrong: '뿌리' },
+            { name: '잎', svg: PlantSVG.leaf, wrong: '꽃' }
+        ];
+
+        function initActivity5() {
+            act5Index = 0;
+            act5Questions.sort(() => Math.random() - 0.5);
+            renderAct5();
+        }
+
+        function renderAct5() {
+            const q = act5Questions[act5Index];
+            document.getElementById('act5-img-target').innerHTML = q.svg;
+
+            const choicesContainer = document.getElementById('act5-choices');
+            choicesContainer.innerHTML = '';
+
+            const opts = [q.name, q.wrong].sort(() => Math.random() - 0.5);
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (opt === q.name) {
+                        AudioFX.playCorrect();
+                        triggerStars();
+                        speak("정답이에요! " + q.name + "입니다.");
+                        setTimeout(() => {
+                            act5Index = (act5Index + 1) % act5Questions.length;
+                            renderAct5();
+                        }, 1500);
+                    } else {
+                        AudioFX.playWrong();
+                        speak("다시 골라 보세요.");
+                    }
+                };
+                choicesContainer.appendChild(btn);
+            });
+
+            speak("그림을 보고 무엇인지 맞혀 보세요!");
+        }
+
+        // 활동 6: 소리를 듣고 찾아요
+        let act6Target = null;
+
+        function initActivity6() {
+            const container = document.getElementById('act6-cards-container');
+            container.innerHTML = '';
+
+            const all = [
+                { name: '잎', svg: PlantSVG.leaf },
+                { name: '꽃', svg: PlantSVG.flower },
+                { name: '열매', svg: PlantSVG.fruit },
+                { name: '뿌리', svg: PlantSVG.root },
+                { name: '줄기', svg: PlantSVG.stem }
+            ].sort(() => Math.random() - 0.5);
+
+            const choices = all.slice(0, 3);
+            act6Target = choices[Math.floor(Math.random() * choices.length)];
+
+            choices.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'plant-card';
+                card.style.width = '240px';
+                card.style.height = '240px';
+                card.innerHTML = `<div style="width:160px; height:160px;">${c.svg}</div>`;
+                card.onclick = () => {
+                    if (c.name === act6Target.name) {
+                        AudioFX.playCorrect();
+                        triggerStars();
+                        speak("잘했어요! " + c.name + "를 찾았어요.");
+                        setTimeout(initActivity6, 1800);
+                    } else {
+                        AudioFX.playWrong();
+                        speak("다시 들어보고 찾아보세요.");
+                    }
+                };
+                container.appendChild(card);
+            });
+
+            speak(act6Target.name + "를 찾아보세요.");
+        }
+
+        /* ----------------------------------------------------
+           6. 정리 활동 로직 (Outro 1 ~ 3)
+           ---------------------------------------------------- */
+        function initOutro1() {
+            document.getElementById('outro1-tomato-svg').innerHTML = PlantSVG.tomatoAll;
+            const list = document.getElementById('outro1-labels-list');
+            list.innerHTML = '';
+
+            const parts = ['🌸 꽃', '🍅 열매', '🌿 잎', '🌱 줄기', '🌱 뿌리'];
+            parts.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'btn';
+                item.style.fontSize = '32px';
+                item.innerText = p;
+                item.onclick = () => speak(p.substring(2) + "!");
+                list.appendChild(item);
+            });
+
+            speak("식물의 다섯 가지 부분을 다시 확인해봐요.");
+        }
+
+        let outro2Index = 0;
+        function initOutro2() {
+            outro2Index = 0;
+            renderOutro2();
+        }
+
+        function renderOutro2() {
+            const q = act5Questions[outro2Index];
+            document.getElementById('outro2-progress').innerText = `⭐ 정리 퀴즈 (${outro2Index + 1} / 5)`;
+            document.getElementById('outro2-img-target').innerHTML = q.svg;
+
+            const choicesContainer = document.getElementById('outro2-choices');
+            choicesContainer.innerHTML = '';
+
+            const opts = [q.name, q.wrong].sort(() => Math.random() - 0.5);
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (opt === q.name) {
+                        AudioFX.playCorrect();
+                        speak("맞았어요!");
+                        if (outro2Index < 4) {
+                            outro2Index++;
+                            setTimeout(renderOutro2, 1200);
+                        } else {
+                            setTimeout(() => showView('view-outro-3'), 1200);
+                        }
+                    } else {
+                        AudioFX.playWrong();
+                        speak("다시 해볼까요?");
+                    }
+                };
+                choicesContainer.appendChild(btn);
+            });
+
+            speak("알맞은 것을 선택하세요.");
+        }
+
+        function initOutro3() {
+            document.getElementById('outro3-tomato-svg').innerHTML = PlantSVG.tomatoAll;
+            speak("식물에는 뿌리, 줄기, 잎, 꽃, 열매가 있어요.");
+        }
+
+        function celebrateFinish() {
+            AudioFX.playFanfare();
+            triggerStars(120);
+            speak("오늘 공부를 정말 잘했어요!");
+        }
+
+        /* ----------------------------------------------------
+           7. 시각 효과 (폭죽/별 파티클 애니메이션)
+           ---------------------------------------------------- */
+        const canvas = document.getElementById('fx-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerStars(count = 50) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: (Math.random() - 0.5) * 20 - 5,
+                    size: Math.random() * 20 + 10,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    life: 1.0
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3; // gravity
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    particles.splice(idx, 1);
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* ----------------------------------------------------
+           8. 교사용 모달 & 세션 리셋 컨트롤러
+           ---------------------------------------------------- */
+        function toggleTeacherModal() {
+            const modal = document.getElementById('teacher-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            document.getElementById('diff-easy-btn').style.background = (diff === 'easy') ? '#a5d6a7' : '#fff';
+            document.getElementById('diff-normal-btn').style.background = (diff === 'normal') ? '#a5d6a7' : '#fff';
+            speak("난이도를 " + (diff === 'easy' ? '쉬움' : '보통') + "으로 설정했어요.");
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audio-toggle-btn').innerText = audioEnabled ? "🔊 ON" : "🔇 OFF";
+        }
+
+        function resetStudentSession() {
+            goToStageMenu();
+            toggleTeacherModal();
+            speak("새로운 학생 시작을 준비했어요.");
+        }
+
+        function restartCurrentStage() {
+            onStageLoaded(STAGES[currentStageIndex]);
+            toggleTeacherModal();
+        }
+
+        // Window Load Initializer
+        window.onload = function() {
+            showView('view-start');
+        };
+    </script>
+</body>
+</html>

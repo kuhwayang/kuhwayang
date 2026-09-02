@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>식물의 뿌리를 관찰하고 분류해 봅시다</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@500;700;900&display=swap');
+        
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0fdf4;
+            color: #166534;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .board-container {
+            width: 100vw;
+            height: 100vh;
+            aspect-ratio: 16/9;
+            max-width: 177.78vh;
+            max-height: 56.25vw;
+            margin: auto;
+            position: relative;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .btn-touch {
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+
+        .btn-touch:active {
+            transform: scale(0.95);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn-touch-selected {
+            ring: 6px #15803d;
+            transform: scale(1.03);
+            box-shadow: 0 12px 20px rgba(22, 101, 52, 0.3);
+        }
+
+        .glow-effect {
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 5px #fef08a); }
+            to { filter: drop-shadow(0 0 25px #eab308); }
+        }
+
+        .pulse-slow {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Glassmorphic cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            border-radius: 2rem;
+        }
+
+        /* SVG root animation */
+        .soil-overlay {
+            transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
+        }
+
+        /* Custom scrollbar reset */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex items-center justify-center bg-slate-900">
+
+    <div id="app" class="board-container rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- Header Controls Bar -->
+        <header class="flex justify-between items-center z-20 h-16 bg-white/70 backdrop-blur rounded-2xl px-6 border-2 border-green-200">
+            <div class="flex items-center gap-4">
+                <button onclick="goHome()" class="btn-touch bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-xl text-2xl flex items-center gap-2">
+                    🏠 <span>처음으로</span>
+                </button>
+                <div id="star-tracker" class="hidden flex gap-2 text-3xl">
+                    <span id="star1">☆</span>
+                    <span id="star2">☆</span>
+                    <span id="star3">☆</span>
+                    <span id="star4">☆</span>
+                    <span id="star5">☆</span>
+                </div>
+            </div>
+
+            <div id="screen-title" class="text-3xl font-black text-emerald-900 tracking-wide">
+                식물의 뿌리를 관찰하고 분류해 봅시다
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="speakCurrentInstruction()" class="btn-touch bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2 rounded-xl text-2xl flex items-center gap-2">
+                    🔊 <span>다시 듣기</span>
+                </button>
+                <button id="hint-btn" onclick="playHintAudio()" class="btn-touch bg-sky-500 hover:bg-sky-600 text-white font-bold px-5 py-2 rounded-xl text-2xl flex items-center gap-2">
+                    💡 <span>힌트</span>
+                </button>
+                <button id="next-nav-btn" onclick="nextStep()" class="btn-touch bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-xl text-2xl flex items-center gap-2">
+                    <span>다음</span> ➡️
+                </button>
+                <!-- Teacher Setting Button -->
+                <button onclick="toggleTeacherMenu()" class="btn-touch bg-slate-400 hover:bg-slate-500 text-white p-2 rounded-xl text-xl ml-2">
+                    ⚙️
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="stage-content" class="flex-1 my-4 relative flex items-center justify-center z-10">
+            <!-- Dynamic Content Injected Here -->
+        </main>
+
+        <!-- Footer / Navigation Indicator -->
+        <footer class="h-10 flex justify-between items-center text-emerald-800 font-bold text-xl px-4 z-20">
+            <span id="step-indicator">특수교육 과학 6학년 2차시</span>
+            <span id="audio-status-text" class="text-emerald-600 text-base">🔊 음성 안내 준비 완료</span>
+        </footer>
+
+        <!-- Teacher Settings Overlay Drawer -->
+        <div id="teacher-modal" class="hidden absolute inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-3xl p-8 max-w-xl w-full border-8 border-slate-300 shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black text-slate-800">⚙️ 교사용 관리 메뉴</h2>
+                    <button onclick="toggleTeacherMenu()" class="text-4xl text-slate-500 font-bold">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-slate-100 p-4 rounded-2xl">
+                        <span class="text-2xl font-bold">음성 읽기 (TTS)</span>
+                        <input type="checkbox" id="toggle-tts" checked onchange="toggleTTS(this.checked)" class="w-8 h-8">
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-100 p-4 rounded-2xl">
+                        <span class="text-2xl font-bold">효과음 (SFX)</span>
+                        <input type="checkbox" id="toggle-sfx" checked onchange="toggleSFX(this.checked)" class="w-8 h-8">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                        <button onclick="resetCurrentStage()" class="bg-amber-500 text-white font-bold p-4 rounded-2xl text-xl btn-touch">🔄 현재 화면 다시하기</button>
+                        <button onclick="showAnswerDirectly()" class="bg-emerald-600 text-white font-bold p-4 rounded-2xl text-xl btn-touch">💡 정답 바로 보기</button>
+                        <button onclick="jumpToStage('intro-1')" class="bg-sky-600 text-white font-bold p-4 rounded-2xl text-xl btn-touch">🌱 도입 바로가기</button>
+                        <button onclick="jumpToStage('dev-menu')" class="bg-indigo-600 text-white font-bold p-4 rounded-2xl text-xl btn-touch">🌿 전개 메뉴가기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* WEB AUDIO API SFX GENERATOR */
+        const AudioEngine = {
+            ctx: null,
+            enabled: true,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playChime() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                osc2.frequency.setValueAtTime(659.25, now + 0.12); // E5
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now + 0.12);
+                osc1.stop(now + 0.8);
+                osc2.stop(now + 0.8);
+            },
+            playTryAgain() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.exponentialRampToValueAtTime(160, now + 0.3);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            },
+            playFanfare() {
+                if (!this.enabled) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + idx * 0.12;
+
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                });
+            }
+        };
+
+        /* TTS SPEECH ENGINE */
+        const TTSEngine = {
+            enabled: true,
+            currentUtterance: null,
+            speak(text, onEndCallback = null) {
+                if (!this.enabled || !('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel(); // Stop current
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.85; // Slower clear speech for special ed
+                utterance.pitch = 1.1;
+
+                utterance.onend = () => {
+                    if (onEndCallback) onEndCallback();
+                };
+
+                this.currentUtterance = utterance;
+                window.speechSynthesis.speak(utterance);
+                document.getElementById('audio-status-text').innerText = "🗣️ 음성 재생 중...";
+                utterance.onend = () => {
+                    document.getElementById('audio-status-text').innerText = "🔊 음성 안내 준비 완료";
+                };
+            },
+            stop() {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+        };
+
+        /* SVG GRAPHICS TEMPLATES (Plant visuals & realistic plant roots) */
+        const SVGLib = {
+            // General Soil Plant Intro
+            soilPlant: `
+            <svg viewBox="0 0 400 400" class="w-full h-full max-h-[420px]">
+                <defs>
+                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#bae6fd"/>
+                        <stop offset="100%" stop-color="#e0f2fe"/>
+                    </linearGradient>
+                    <linearGradient id="soilGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#854d0e"/>
+                        <stop offset="100%" stop-color="#543310"/>
+                    </linearGradient>
+                </defs>
+                <rect width="400" height="230" fill="url(#skyGrad)" rx="20"/>
+                <!-- Stem & Leaves Above Ground -->
+                <g id="plant-above">
+                    <path d="M200 230 Q200 120 195 90" stroke="#15803d" stroke-width="12" fill="none" stroke-linecap="round"/>
+                    <!-- Leaf 1 -->
+                    <path d="M195 130 Q130 110 120 140 Q160 170 196 138" fill="#22c55e" stroke="#15803d" stroke-width="3"/>
+                    <!-- Leaf 2 -->
+                    <path d="M198 110 Q260 80 270 110 Q230 140 197 115" fill="#22c55e" stroke="#15803d" stroke-width="3"/>
+                    <!-- Flower -->
+                    <circle cx="195" cy="80" r="18" fill="#facc15"/>
+                    <circle cx="195" cy="80" r="8" fill="#ea580c"/>
+                </g>
+                <!-- Root below ground -->
+                <g id="intro-root-graphic" class="transition-all duration-700">
+                    <rect x="0" y="230" width="400" height="170" fill="#fef3c7" rx="10"/>
+                    <path d="M200 230 L200 340 M200 250 Q160 270 140 300 M200 270 Q240 290 260 320 M200 290 Q170 310 160 350" stroke="#b45309" stroke-width="8" stroke-linecap="round" fill="none"/>
+                </g>
+                <!-- Soil Overlay Layer -->
+                <rect id="soil-layer" x="0" y="230" width="400" height="170" fill="url(#soilGrad)" class="soil-overlay" rx="10"/>
+            </svg>`,
+
+            // Taproot (곧은 모양 뿌리 - 강낭콩)
+            tapRoot: (width=280, height=280) => `
+            <svg viewBox="0 0 200 200" width="${width}" height="${height}" class="drop-shadow-md">
+                <rect width="200" height="200" fill="#fefcbf" rx="24"/>
+                <g stroke="#854d0e" stroke-linecap="round" fill="none">
+                    <!-- Main Thick Root -->
+                    <path d="M100 20 L100 165" stroke-width="12"/>
+                    <!-- Branching Side Roots -->
+                    <path d="M100 45 Q70 60 50 75" stroke-width="4"/>
+                    <path d="M100 55 Q135 70 155 85" stroke-width="4"/>
+                    <path d="M100 80 Q65 95 45 115" stroke-width="3.5"/>
+                    <path d="M100 95 Q130 110 150 130" stroke-width="3.5"/>
+                    <path d="M100 120 Q75 135 60 150" stroke-width="3"/>
+                    <path d="M100 135 Q125 145 140 160" stroke-width="2.5"/>
+                </g>
+                <text x="100" y="190" text-anchor="middle" font-size="14" font-weight="bold" fill="#713f12">중심 뿌리가 굵고 곧음</text>
+            </svg>`,
+
+            // Fibrous Root (수염 모양 뿌리 - 옥수수)
+            fibrousRoot: (width=280, height=280) => `
+            <svg viewBox="0 0 200 200" width="${width}" height="${height}" class="drop-shadow-md">
+                <rect width="200" height="200" fill="#e0f2fe" rx="24"/>
+                <g stroke="#0369a1" stroke-linecap="round" fill="none" stroke-width="3.5">
+                    <!-- Multiple equal roots spreading out -->
+                    <path d="M100 25 Q90 90 40 165"/>
+                    <path d="M100 25 Q95 95 60 170"/>
+                    <path d="M100 25 Q100 100 80 175"/>
+                    <path d="M100 25 Q100 100 100 178"/>
+                    <path d="M100 25 Q100 100 120 175"/>
+                    <path d="M100 25 Q105 95 140 170"/>
+                    <path d="M100 25 Q110 90 160 165"/>
+                </g>
+                <text x="100" y="190" text-anchor="middle" font-size="14" font-weight="bold" fill="#075985">비슷한 굵기 뿌리가 여러 개</text>
+            </svg>`,
+
+            // Kidney Bean Plant Full
+            kidneyBean: `
+            <svg viewBox="0 0 200 220" class="w-48 h-52">
+                <rect width="200" height="220" fill="#ffffff" rx="20" stroke="#bbf7d0" stroke-width="4"/>
+                <path d="M100 110 Q100 50 95 20" stroke="#16a34a" stroke-width="7" fill="none"/>
+                <!-- Leaves -->
+                <path d="M95 40 Q50 20 40 50 Q70 80 95 45" fill="#4ade80" stroke="#15803d" stroke-width="2"/>
+                <path d="M95 30 Q140 10 150 40 Q120 70 95 35" fill="#4ade80" stroke="#15803d" stroke-width="2"/>
+                <path d="M95 70 Q150 50 160 80 Q120 100 95 72" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                <!-- Bean Pod -->
+                <path d="M100 50 Q120 70 110 90" stroke="#facc15" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <!-- Separator Line -->
+                <line x1="10" y1="110" x2="190" y2="110" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4"/>
+                <!-- Root below -->
+                <g stroke="#854d0e" stroke-linecap="round" fill="none" transform="translate(0, 10)">
+                    <path d="M100 105 L100 190" stroke-width="8"/>
+                    <path d="M100 120 Q70 130 55 145" stroke-width="3"/>
+                    <path d="M100 135 Q130 145 145 160" stroke-width="3"/>
+                    <path d="M100 155 Q75 165 65 180" stroke-width="2.5"/>
+                </g>
+                <text x="100" y="205" text-anchor="middle" font-size="16" font-weight="bold" fill="#166534">🫘 강낭콩</text>
+            </svg>`,
+
+            // Corn Plant Full
+            corn: `
+            <svg viewBox="0 0 200 220" class="w-48 h-52">
+                <rect width="200" height="220" fill="#ffffff" rx="20" stroke="#bae6fd" stroke-width="4"/>
+                <!-- Stem -->
+                <path d="M100 110 L100 25" stroke="#65a30d" stroke-width="8" fill="none"/>
+                <!-- Long leaves -->
+                <path d="M100 70 Q40 50 20 90" stroke="#84cc16" stroke-width="6" fill="none"/>
+                <path d="M100 50 Q160 30 180 70" stroke="#84cc16" stroke-width="6" fill="none"/>
+                <path d="M100 30 Q30 10 10 40" stroke="#84cc16" stroke-width="5" fill="none"/>
+                <!-- Corn Cob -->
+                <rect x="104" y="45" width="14" height="30" rx="7" fill="#facc15"/>
+                <line x1="10" y1="110" x2="190" y2="110" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4"/>
+                <!-- Fibrous Roots -->
+                <g stroke="#0284c7" stroke-linecap="round" fill="none" stroke-width="3" transform="translate(0, 5)">
+                    <path d="M100 105 Q85 140 45 190"/>
+                    <path d="M100 105 Q90 145 70 195"/>
+                    <path d="M100 105 L100 198"/>
+                    <path d="M100 105 Q110 145 130 195"/>
+                    <path d="M100 105 Q115 140 155 190"/>
+                </g>
+                <text x="100" y="205" text-anchor="middle" font-size="16" font-weight="bold" fill="#0369a1">🌽 옥수수</text>
+            </svg>`,
+
+            // Generic Plant Icon Visuals for Cards
+            plantCard: (name, emoji, type) => {
+                const isTap = type === 'tap';
+                const rootSvg = isTap ? `
+                    <path d="M100 100 L100 170" stroke="#854d0e" stroke-width="7"/>
+                    <path d="M100 120 Q70 130 60 140" stroke="#854d0e" stroke-width="2.5"/>
+                    <path d="M100 140 Q130 150 140 160" stroke="#854d0e" stroke-width="2.5"/>
+                ` : `
+                    <path d="M100 100 Q80 130 50 170" stroke="#0284c7" stroke-width="3"/>
+                    <path d="M100 100 L100 175" stroke="#0284c7" stroke-width="3"/>
+                    <path d="M100 100 Q120 130 150 170" stroke="#0284c7" stroke-width="3"/>
+                `;
+                return `
+                <svg viewBox="0 0 200 190" class="w-full h-36">
+                    <rect width="200" height="190" fill="#f8fafc" rx="16"/>
+                    <text x="100" y="55" text-anchor="middle" font-size="42">${emoji}</text>
+                    <text x="100" y="88" text-anchor="middle" font-size="18" font-weight="bold" fill="#334155">${name}</text>
+                    <line x1="20" y1="98" x2="180" y2="98" stroke="#e2e8f0" stroke-width="2"/>
+                    <g fill="none" stroke-linecap="round">
+                        ${rootSvg}
+                    </g>
+                </svg>`;
+            }
+        };
+
+        /* STATE MANAGEMENT */
+        const state = {
+            currentStage: 'home', // 'home', 'intro-1', 'intro-2', 'dev-menu', 'dev-1'...'dev-5', 'summary-1'...'summary-3'
+            starsCompleted: [false, false, false, false, false],
+            selectedOption: null,
+            idleTimer: null,
+            currentAudioText: ""
+        };
+
+        /* PLANT DATASET */
+        const plantsData = [
+            { id: 'bean', name: '강낭콩', type: 'tap', typeName: '곧은 모양 뿌리', emoji: '🫘' },
+            { id: 'corn', name: '옥수수', type: 'fibrous', typeName: '수염 모양 뿌리', emoji: '🌽' },
+            { id: 'tomato', name: '토마토', type: 'tap', typeName: '곧은 모양 뿌리', emoji: '🍅' },
+            { id: 'strawberry', name: '딸기', type: 'tap', typeName: '곧은 모양 뿌리', emoji: '🍓' },
+            { id: 'onion', name: '양파', type: 'fibrous', typeName: '수염 모양 뿌리', emoji: '🧅' },
+            { id: 'greenonion', name: '대파', type: 'fibrous', typeName: '수염 모양 뿌리', emoji: '🌾' }
+        ];
+
+        /* IDLE TIMER FOR AUDIO HINT */
+        function resetIdleTimer() {
+            if (state.idleTimer) clearTimeout(state.idleTimer);
+            state.idleTimer = setTimeout(() => {
+                playHintAudio();
+            }, 12000); // 12 seconds idle
+        }
+
+        function playHintAudio() {
+            if (state.currentAudioText) {
+                TTSEngine.speak("힌트입니다. " + state.currentAudioText);
+            }
+        }
+
+        function speakCurrentInstruction() {
+            if (state.currentAudioText) {
+                TTSEngine.speak(state.currentAudioText);
+            }
+        }
+
+        function updateTitle(titleText, audioText) {
+            document.getElementById('screen-title').innerText = titleText;
+            state.currentAudioText = audioText || titleText;
+            speakCurrentInstruction();
+            resetIdleTimer();
+        }
+
+        function updateStars() {
+            const tracker = document.getElementById('star-tracker');
+            if (state.currentStage.startsWith('dev')) {
+                tracker.classList.remove('hidden');
+                for (let i = 1; i <= 5; i++) {
+                    const el = document.getElementById(`star${i}`);
+                    el.innerText = state.starsCompleted[i - 1] ? '⭐' : '☆';
+                    el.className = state.starsCompleted[i - 1] ? 'text-amber-400 scale-110 transition-transform' : 'text-slate-400';
+                }
+            } else {
+                tracker.classList.add('hidden');
+            }
+        }
+
+        /* STAGE RENDERERS */
+
+        // HOME / MAIN NAVIGATION
+        function renderHome() {
+            state.currentStage = 'home';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full w-full gap-8">
+                    <div class="bg-white/80 p-6 rounded-3xl border-4 border-emerald-300 text-center shadow-lg">
+                        <h1 class="text-5xl font-black text-emerald-800 mb-2">🌱 식물의 뿌리를 관찰하고 분류해요</h1>
+                        <p class="text-2xl font-bold text-emerald-600">전자칠판을 터치하여 활동을 시작하세요</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-8 w-11/12 max-w-5xl">
+                        <button onclick="jumpToStage('intro-1')" class="btn-touch bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-4xl p-10 rounded-3xl border-4 border-amber-200 flex flex-col items-center gap-4">
+                            <span class="text-7xl">🌱</span>
+                            <span>1. 시작하기</span>
+                            <span class="text-xl font-medium bg-amber-100 px-4 py-1 rounded-full">(도입)</span>
+                        </button>
+
+                        <button onclick="jumpToStage('dev-menu')" class="btn-touch bg-emerald-500 hover:bg-emerald-600 text-white font-black text-4xl p-10 rounded-3xl border-4 border-emerald-200 flex flex-col items-center gap-4">
+                            <span class="text-7xl">🌿</span>
+                            <span>2. 활동하기</span>
+                            <span class="text-xl font-medium bg-emerald-700 px-4 py-1 rounded-full">(전개)</span>
+                        </button>
+
+                        <button onclick="jumpToStage('summary-1')" class="btn-touch bg-sky-500 hover:bg-sky-600 text-white font-black text-4xl p-10 rounded-3xl border-4 border-sky-200 flex flex-col items-center gap-4">
+                            <span class="text-7xl">⭐</span>
+                            <span>3. 정리하기</span>
+                            <span class="text-xl font-medium bg-sky-700 px-4 py-1 rounded-full">(정리)</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            updateTitle("원하는 활동을 터치하여 선택하세요", "원하는 활동을 터치하여 선택하세요");
+        }
+
+        // 1. INTRO - 1: GROUND UNDERCOVER
+        function renderIntro1() {
+            state.currentStage = 'intro-1';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-4xl py-2">
+                    <div class="bg-white/90 px-8 py-3 rounded-2xl border-2 border-green-300 text-3xl font-bold text-center">
+                        식물의 땅속에는 무엇이 있을까요?
+                    </div>
+
+                    <div class="relative w-96 h-80 my-2">
+                        ${SVGLib.soilPlant}
+                    </div>
+
+                    <button id="reveal-btn" onclick="revealRootAnimation()" class="btn-touch bg-amber-500 hover:bg-amber-600 text-white font-black text-4xl px-12 py-6 rounded-3xl shadow-xl pulse-slow">
+                        👀 땅속 보기
+                    </button>
+                </div>
+            `;
+            updateTitle("땅속에는 무엇이 있을까?", "식물의 땅속에는 무엇이 있을까요? 땅속 보기 버튼을 눌러보세요.");
+        }
+
+        function revealRootAnimation() {
+            const soilLayer = document.getElementById('soil-layer');
+            const revealBtn = document.getElementById('reveal-btn');
+            if (soilLayer) {
+                soilLayer.style.opacity = '0.15';
+                soilLayer.style.transform = 'translateY(40px)';
+            }
+            AudioEngine.playFanfare();
+            TTSEngine.speak("짜잔! 땅속에는 뿌리가 있어요.");
+            if (revealBtn) {
+                revealBtn.className = "btn-touch bg-emerald-600 text-white font-black text-3xl px-10 py-4 rounded-3xl";
+                revealBtn.innerHTML = "✨ 뿌리가 나타났어요!";
+            }
+        }
+
+        // 1. INTRO - 2: FIND ROOT PART
+        function renderIntro2() {
+            state.currentStage = 'intro-2';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <div class="text-3xl font-black bg-emerald-100 text-emerald-900 px-6 py-2 rounded-2xl border-2 border-emerald-400">
+                        식물의 뿌리를 찾아 눌러 보세요!
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 items-center w-full my-2">
+                        <div class="relative w-80 h-80 mx-auto bg-white rounded-3xl p-4 shadow-lg border-4 border-green-200">
+                            ${SVGLib.soilPlant}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="checkIntro2Choice('flower')" class="btn-touch bg-pink-100 hover:bg-pink-200 text-pink-900 text-3xl font-black p-6 rounded-2xl border-4 border-pink-300">
+                                🌸 꽃
+                            </button>
+                            <button onclick="checkIntro2Choice('leaf')" class="btn-touch bg-green-100 hover:bg-green-200 text-green-900 text-3xl font-black p-6 rounded-2xl border-4 border-green-300">
+                                🍃 잎
+                            </button>
+                            <button onclick="checkIntro2Choice('stem')" class="btn-touch bg-amber-100 hover:bg-amber-200 text-amber-900 text-3xl font-black p-6 rounded-2xl border-4 border-amber-300">
+                                🪵 줄기
+                            </button>
+                            <button onclick="checkIntro2Choice('root')" class="btn-touch bg-emerald-500 hover:bg-emerald-600 text-white text-4xl font-black p-8 rounded-2xl border-4 border-emerald-300 glow-effect">
+                                🌱 뿌리
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="intro2-goal" class="hidden bg-amber-300 text-amber-950 font-black text-3xl px-8 py-3 rounded-2xl animate-bounce">
+                        오늘의 공부: 뿌리를 보고 나누어 봐요!
+                    </div>
+                </div>
+            `;
+            updateTitle("뿌리를 찾아라", "뿌리를 찾아 눌러 보세요.");
+        }
+
+        function checkIntro2Choice(part) {
+            if (part === 'root') {
+                AudioEngine.playChime();
+                TTSEngine.speak("딩동! 맞았어요. 이것이 뿌리예요.", () => {
+                    document.getElementById('intro2-goal').classList.remove('hidden');
+                });
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("땅 아래쪽을 살펴볼까요?");
+            }
+        }
+
+        // 2. DEV MENU (ACTIVITY SELECTION)
+        function renderDevMenu() {
+            state.currentStage = 'dev-menu';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full w-full gap-6">
+                    <div class="grid grid-cols-3 gap-6 w-11/12 max-w-5xl">
+                        <button onclick="jumpToStage('dev-1')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-400 p-6 rounded-3xl flex flex-col items-center gap-3">
+                            <span class="text-6xl">🔍</span>
+                            <span class="text-3xl font-black text-emerald-900">1. 뿌리 관찰하기</span>
+                            <span class="text-lg font-bold text-emerald-600">강낭콩과 옥수수</span>
+                        </button>
+
+                        <button onclick="jumpToStage('dev-2')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-400 p-6 rounded-3xl flex flex-col items-center gap-3">
+                            <span class="text-6xl">🔗</span>
+                            <span class="text-3xl font-black text-emerald-900">2. 같은 뿌리 연결하기</span>
+                            <span class="text-lg font-bold text-emerald-600">선으로 이어보기</span>
+                        </button>
+
+                        <button onclick="jumpToStage('dev-3')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-400 p-6 rounded-3xl flex flex-col items-center gap-3">
+                            <span class="text-6xl">🖼️</span>
+                            <span class="text-3xl font-black text-emerald-900">3. 알맞은 그림 넣기</span>
+                            <span class="text-lg font-bold text-emerald-600">빈 칸 채우기</span>
+                        </button>
+
+                        <button onclick="jumpToStage('dev-4')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-400 p-6 rounded-3xl flex flex-col items-center gap-3">
+                            <span class="text-6xl">👨‍👩‍👧‍👦</span>
+                            <span class="text-3xl font-black text-emerald-900">4. 뿌리 가족 찾기</span>
+                            <span class="text-lg font-bold text-emerald-600">같은 모양 찾기</span>
+                        </button>
+
+                        <button onclick="jumpToStage('dev-5')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-400 p-6 rounded-3xl flex flex-col items-center gap-3 col-span-2">
+                            <span class="text-6xl">🧺</span>
+                            <span class="text-3xl font-black text-emerald-900">5. 식물 분류하기 (핵심)</span>
+                            <span class="text-lg font-bold text-emerald-600">바구니에 나눠 담기</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            updateTitle("원하는 탐구 활동을 선택하세요", "원하는 탐구 활동을 터치하세요.");
+        }
+
+        // 2. DEV - 1: OBSERVE BEAN & CORN
+        let dev1Step = 'bean'; // 'bean' or 'corn'
+        function renderDev1() {
+            state.currentStage = 'dev-1';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            const isBean = dev1Step === 'bean';
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <div class="flex gap-4 mb-2">
+                        <button onclick="dev1Step='bean'; renderDev1();" class="btn-touch text-2xl font-black px-6 py-2 rounded-2xl ${isBean ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-800'}">🫘 강낭콩 관찰</button>
+                        <button onclick="dev1Step='corn'; renderDev1();" class="btn-touch text-2xl font-black px-6 py-2 rounded-2xl ${!isBean ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-800'}">🌽 옥수수 관찰</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 items-center w-full my-2">
+                        <!-- Left Full Plant View -->
+                        <div class="flex flex-col items-center bg-white p-4 rounded-3xl border-4 border-emerald-300 shadow-md">
+                            ${isBean ? SVGLib.kidneyBean : SVGLib.corn}
+                            <button onclick="zoomDev1Root()" class="btn-touch mt-2 bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-2xl px-6 py-2 rounded-2xl">
+                                🔍 뿌리 크게 보기
+                            </button>
+                        </div>
+
+                        <!-- Right Root Shape Options -->
+                        <div class="flex flex-col gap-4">
+                            <div class="text-2xl font-bold text-center bg-white/80 py-2 rounded-xl">
+                                ${isBean ? '강낭콩' : '옥수수'}의 뿌리는 어느 쪽일까요?
+                            </div>
+
+                            <button onclick="checkDev1Choice('tap')" class="btn-touch bg-white hover:bg-amber-50 border-4 border-amber-300 p-4 rounded-2xl flex items-center gap-4">
+                                ${SVGLib.tapRoot(100, 100)}
+                                <span class="text-3xl font-black text-amber-900">A. 가운데 굵고 곧은 뿌리</span>
+                            </button>
+
+                            <button onclick="checkDev1Choice('fibrous')" class="btn-touch bg-white hover:bg-sky-50 border-4 border-sky-300 p-4 rounded-2xl flex items-center gap-4">
+                                ${SVGLib.fibrousRoot(100, 100)}
+                                <span class="text-3xl font-black text-sky-900">B. 가느다란 수염 뿌리</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="dev1-result" class="hidden text-3xl font-black px-8 py-3 rounded-2xl"></div>
+                </div>
+            `;
+            updateTitle(
+                isBean ? "강낭콩 뿌리 관찰" : "옥수수 뿌리 관찰",
+                `${isBean ? '강낭콩' : '옥수수'}의 뿌리를 살펴보세요. 어느 모양일까요?`
+            );
+        }
+
+        function zoomDev1Root() {
+            const isBean = dev1Step === 'bean';
+            TTSEngine.speak(isBean ? "강낭콩은 가운데 굵은 뿌리가 크게 뻗어 있어요." : "옥수수는 가느다란 뿌리가 여러 개 모여 있어요.");
+        }
+
+        function checkDev1Choice(choice) {
+            const isBean = dev1Step === 'bean';
+            const correct = (isBean && choice === 'tap') || (!isBean && choice === 'fibrous');
+            const resBox = document.getElementById('dev1-result');
+
+            if (correct) {
+                AudioEngine.playChime();
+                resBox.classList.remove('hidden', 'bg-rose-100', 'text-rose-800');
+                resBox.classList.add('bg-emerald-500', 'text-white');
+                
+                if (isBean) {
+                    resBox.innerText = "맞았어요! [곧은 모양 뿌리] 예요!";
+                    TTSEngine.speak("맞았어요! 가운데 굵은 뿌리가 있는 곧은 모양 뿌리예요.");
+                } else {
+                    resBox.innerText = "맞았어요! [수염 모양 뿌리] 예요!";
+                    TTSEngine.speak("맞았어요! 여러 뿌리가 수염처럼 모여 있는 수염 모양 뿌리예요.");
+                }
+                state.starsCompleted[0] = true;
+                updateStars();
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 한번 뿌리 모양을 살펴볼까요?");
+            }
+        }
+
+        // 2. DEV - 2: MATCHING CONNECT
+        let matchSelectedPlant = null;
+        let matchedPairs = { bean: null, corn: null };
+
+        function renderDev2() {
+            state.currentStage = 'dev-2';
+            updateStars();
+            matchSelectedPlant = null;
+            matchedPairs = { bean: null, corn: null };
+
+            const container = document.getElementById('stage-content');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <div class="text-3xl font-bold bg-white/90 px-8 py-2 rounded-2xl border-2 border-green-300">
+                        식물과 알맞은 뿌리 모양을 터치하여 연결하세요!
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-16 w-full items-center my-4">
+                        <!-- Left Plants -->
+                        <div class="flex flex-col gap-6">
+                            <button id="p-bean" onclick="selectMatchPlant('bean')" class="btn-touch bg-white border-4 border-amber-300 p-4 rounded-3xl flex items-center gap-6">
+                                <span class="text-6xl">🫘</span>
+                                <span class="text-4xl font-black text-slate-800">강낭콩</span>
+                            </button>
+                            <button id="p-corn" onclick="selectMatchPlant('corn')" class="btn-touch bg-white border-4 border-sky-300 p-4 rounded-3xl flex items-center gap-6">
+                                <span class="text-6xl">🌽</span>
+                                <span class="text-4xl font-black text-slate-800">옥수수</span>
+                            </button>
+                        </div>
+
+                        <!-- Right Root Types -->
+                        <div class="flex flex-col gap-6">
+                            <button id="r-tap" onclick="selectMatchRoot('tap')" class="btn-touch bg-white border-4 border-amber-400 p-4 rounded-3xl flex items-center gap-6">
+                                ${SVGLib.tapRoot(80, 80)}
+                                <span class="text-3xl font-black text-amber-900">곧은 모양 뿌리</span>
+                            </button>
+                            <button id="r-fibrous" onclick="selectMatchRoot('fibrous')" class="btn-touch bg-white border-4 border-sky-400 p-4 rounded-3xl flex items-center gap-6">
+                                ${SVGLib.fibrousRoot(80, 80)}
+                                <span class="text-3xl font-black text-sky-900">수염 모양 뿌리</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="dev2-status" class="text-3xl font-black text-emerald-800 h-12">
+                        식물을 먼저 터치해 주세요.
+                    </div>
+                </div>
+            `;
+            updateTitle("식물과 알맞은 뿌리 연결하기", "식물과 알맞은 뿌리를 순서대로 터치하여 연결해 보세요.");
+        }
+
+        function selectMatchPlant(plantKey) {
+            matchSelectedPlant = plantKey;
+            document.getElementById('p-bean').classList.remove('btn-touch-selected');
+            document.getElementById('p-corn').classList.remove('btn-touch-selected');
+            document.getElementById(`p-${plantKey}`).classList.add('btn-touch-selected');
+            
+            const name = plantKey === 'bean' ? '강낭콩' : '옥수수';
+            document.getElementById('dev2-status').innerText = `[${name}] 선택됨 👉 알맞은 뿌리를 누르세요!`;
+            TTSEngine.speak(`${name}을 선택했어요. 알맞은 뿌리를 눌러보세요.`);
+        }
+
+        function selectMatchRoot(rootType) {
+            if (!matchSelectedPlant) {
+                TTSEngine.speak("왼쪽에서 식물을 먼저 선택해 주세요.");
+                return;
+            }
+
+            const isCorrect = (matchSelectedPlant === 'bean' && rootType === 'tap') || (matchSelectedPlant === 'corn' && rootType === 'fibrous');
+
+            if (isCorrect) {
+                AudioEngine.playChime();
+                matchedPairs[matchSelectedPlant] = rootType;
+                document.getElementById(`p-${matchSelectedPlant}`).classList.add('bg-green-200');
+
+                if (matchedPairs.bean && matchedPairs.corn) {
+                    AudioEngine.playFanfare();
+                    document.getElementById('dev2-status').innerText = "🎉 연결 완료! 잘했어요!";
+                    TTSEngine.speak("딩동! 강낭콩은 곧은 모양 뿌리, 옥수수는 수염 모양 뿌리예요.");
+                    state.starsCompleted[1] = true;
+                    updateStars();
+                } else {
+                    document.getElementById('dev2-status').innerText = "잘했어요! 다음 식물도 연결하세요.";
+                    TTSEngine.speak("맞았어요! 다음 식물도 연결해 보세요.");
+                }
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("알맞은 뿌리가 아니에요. 뿌리 모양을 다시 살펴볼까요?");
+            }
+        }
+
+        // 2. DEV - 3: FILL IN SLOT (6 PLANTS ONE BY ONE)
+        let dev3Index = 0;
+        function renderDev3() {
+            state.currentStage = 'dev-3';
+            updateStars();
+            const plant = plantsData[dev3Index];
+            const container = document.getElementById('stage-content');
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-4xl">
+                    <div class="text-2xl font-bold bg-white/90 px-6 py-2 rounded-2xl border-2 border-green-300">
+                        문제 (${dev3Index + 1} / 6): 알맞은 뿌리 카드를 선택하세요!
+                    </div>
+
+                    <!-- Target Plant Slot Card -->
+                    <div class="glass-card p-6 w-full max-w-lg flex flex-col items-center gap-3 border-4 border-emerald-400">
+                        <span class="text-7xl">${plant.emoji}</span>
+                        <span class="text-4xl font-black text-emerald-950">${plant.name}의 뿌리는?</span>
+                        <div id="slot-target" class="w-full h-20 border-4 border-dashed border-emerald-500 rounded-2xl flex items-center justify-center bg-emerald-50 text-2xl font-bold text-emerald-700">
+                            여기에 알맞은 뿌리 선택
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="grid grid-cols-2 gap-8 w-full">
+                        <button onclick="checkDev3Choice('tap')" class="btn-touch bg-white hover:bg-amber-50 border-4 border-amber-300 p-4 rounded-3xl flex items-center justify-center gap-4">
+                            ${SVGLib.tapRoot(80, 80)}
+                            <span class="text-3xl font-black text-amber-900">곧은 모양 뿌리</span>
+                        </button>
+                        <button onclick="checkDev3Choice('fibrous')" class="btn-touch bg-white hover:bg-sky-50 border-4 border-sky-300 p-4 rounded-3xl flex items-center justify-center gap-4">
+                            ${SVGLib.fibrousRoot(80, 80)}
+                            <span class="text-3xl font-black text-sky-900">수염 모양 뿌리</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            updateTitle(`${plant.name}의 뿌리 모양 찾기`, `${plant.name}의 뿌리는 어느 모양일까요?`);
+        }
+
+        function checkDev3Choice(type) {
+            const plant = plantsData[dev3Index];
+            if (plant.type === type) {
+                AudioEngine.playChime();
+                const slot = document.getElementById('slot-target');
+                slot.className = "w-full h-20 bg-emerald-500 text-white rounded-2xl flex items-center justify-center text-3xl font-black";
+                slot.innerText = `정답: ${plant.typeName}!`;
+                TTSEngine.speak(`맞았어요! ${plant.name}은 ${plant.typeName}예요.`);
+
+                setTimeout(() => {
+                    if (dev3Index < plantsData.length - 1) {
+                        dev3Index++;
+                        renderDev3();
+                    } else {
+                        AudioEngine.playFanfare();
+                        state.starsCompleted[2] = true;
+                        updateStars();
+                        TTSEngine.speak("6개 식물의 뿌리를 모두 알아보았어요. 참 잘했어요!");
+                    }
+                }, 1500);
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 한번 뿌리 모양을 살펴볼까요?");
+            }
+        }
+
+        // 2. DEV - 4: ROOT FAMILY / GROUPING
+        let dev4Step = 0; // 0: Kidney bean family, 1: Corn family
+        function renderDev4() {
+            state.currentStage = 'dev-4';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            const isBeanFamily = dev4Step === 0;
+
+            const targetPlant = isBeanFamily ? plantsData[0] : plantsData[1]; // Bean or Corn
+            const options = isBeanFamily ? 
+                [plantsData[2], plantsData[4], plantsData[1]] : // Tomato(correct), Onion, Corn
+                [plantsData[3], plantsData[5], plantsData[2]];  // Strawberry, Green Onion(correct), Tomato
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <div class="text-3xl font-bold bg-white/90 px-8 py-2 rounded-2xl border-2 border-green-300">
+                        ${targetPlant.name}과 같은 뿌리 가족 식물을 찾아보세요!
+                    </div>
+
+                    <!-- Target Card -->
+                    <div class="flex items-center gap-6 bg-amber-100 border-4 border-amber-400 px-8 py-4 rounded-3xl">
+                        <span class="text-7xl">${targetPlant.emoji}</span>
+                        <div>
+                            <div class="text-3xl font-black text-amber-950">${targetPlant.name}</div>
+                            <div class="text-xl font-bold text-amber-800">(${targetPlant.typeName})</div>
+                        </div>
+                    </div>
+
+                    <div class="text-2xl font-bold text-emerald-900">아래 식물 중 같은 뿌리 가족은?</div>
+
+                    <!-- Candidate Options -->
+                    <div class="grid grid-cols-3 gap-6 w-full">
+                        ${options.map(opt => `
+                            <button onclick="checkDev4Choice('${opt.id}', '${opt.type}')" class="btn-touch bg-white hover:bg-emerald-50 border-4 border-emerald-300 p-6 rounded-3xl flex flex-col items-center gap-3">
+                                <span class="text-6xl">${opt.emoji}</span>
+                                <span class="text-3xl font-black text-slate-800">${opt.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            updateTitle("뿌리 가족 찾기", `${targetPlant.name}과 같은 뿌리를 가진 식물을 찾아보세요.`);
+        }
+
+        function checkDev4Choice(optId, optType) {
+            const targetType = dev4Step === 0 ? 'tap' : 'fibrous';
+            if (optType === targetType) {
+                AudioEngine.playChime();
+                TTSEngine.speak("맞았어요! 같은 뿌리 가족이에요.");
+
+                setTimeout(() => {
+                    if (dev4Step === 0) {
+                        dev4Step = 1;
+                        renderDev4();
+                    } else {
+                        AudioEngine.playFanfare();
+                        state.starsCompleted[3] = true;
+                        updateStars();
+                        TTSEngine.speak("축하합니다! 뿌리 가족을 모두 찾았어요.");
+                    }
+                }, 1500);
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 한번 살펴볼까요?");
+            }
+        }
+
+        // 2. DEV - 5: CLASSIFICATION BASKET (MAIN CORE ACTIVITY)
+        let dev5CardIdx = 0;
+        let sortedBaskets = { tap: [], fibrous: [] };
+
+        function renderDev5() {
+            state.currentStage = 'dev-5';
+            updateStars();
+            const container = document.getElementById('stage-content');
+            const currentPlant = plantsData[dev5CardIdx];
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <!-- Top Info Banner -->
+                    <div class="text-2xl font-bold bg-white/90 px-6 py-2 rounded-2xl border-2 border-green-300 flex items-center gap-4">
+                        <span>식물을 알맞은 뿌리 바구니에 넣으세요!</span>
+                        ${currentPlant ? `<span class="bg-emerald-600 text-white px-4 py-1 rounded-full text-xl font-black">남은 식물: ${plantsData.length - dev5CardIdx}개</span>` : ''}
+                    </div>
+
+                    <!-- Baskets Area -->
+                    <div class="grid grid-cols-2 gap-8 w-full my-2">
+                        <!-- Basket Taproot -->
+                        <div onclick="placeInBasket('tap')" class="btn-touch bg-amber-50/90 border-4 border-amber-400 rounded-3xl p-4 flex flex-col items-center min-h-[220px]">
+                            <div class="flex items-center gap-3 bg-amber-200 px-6 py-2 rounded-2xl mb-2">
+                                ${SVGLib.tapRoot(50, 50)}
+                                <span class="text-2xl font-black text-amber-950">🌱 곧은 모양 뿌리</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 justify-center" id="basket-tap-list">
+                                ${sortedBaskets.tap.map(p => `<span class="bg-white border-2 border-amber-300 px-4 py-2 rounded-xl font-bold text-xl">${p.emoji} ${p.name}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Basket Fibrous -->
+                        <div onclick="placeInBasket('fibrous')" class="btn-touch bg-sky-50/90 border-4 border-sky-400 rounded-3xl p-4 flex flex-col items-center min-h-[220px]">
+                            <div class="flex items-center gap-3 bg-sky-200 px-6 py-2 rounded-2xl mb-2">
+                                ${SVGLib.fibrousRoot(50, 50)}
+                                <span class="text-2xl font-black text-sky-950">🌾 수염 모양 뿌리</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 justify-center" id="basket-fibrous-list">
+                                ${sortedBaskets.fibrous.map(p => `<span class="bg-white border-2 border-sky-300 px-4 py-2 rounded-xl font-bold text-xl">${p.emoji} ${p.name}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Plant Card To Classify -->
+                    ${currentPlant ? `
+                        <div class="glass-card p-4 flex items-center justify-between w-full max-w-2xl border-4 border-emerald-400 shadow-xl">
+                            <div class="flex items-center gap-4">
+                                <span class="text-6xl">${currentPlant.emoji}</span>
+                                <div>
+                                    <div class="text-3xl font-black text-emerald-950">${currentPlant.name}</div>
+                                    <div class="text-lg font-bold text-emerald-700">바구니를 선택해 주세요</div>
+                                </div>
+                            </div>
+                            <button onclick="TTSEngine.speak('${currentPlant.name}의 뿌리를 살펴보세요.')" class="btn-touch bg-amber-400 text-amber-950 font-bold px-4 py-2 rounded-xl text-lg">
+                                🔍 뿌리 확대
+                            </button>
+                        </div>
+                    ` : `
+                        <div id="success-banner" class="bg-emerald-600 text-white text-4xl font-black px-12 py-6 rounded-3xl shadow-2xl animate-bounce">
+                            🎉 분류 성공! 참 잘했어요! 🎉
+                        </div>
+                    `}
+                </div>
+            `;
+
+            if (currentPlant) {
+                updateTitle(`${currentPlant.name} 분류하기`, `${currentPlant.name}을 알맞은 바구니에 넣으세요.`);
+            } else {
+                updateTitle("분류 완료!", "모든 식물을 성공적으로 분류했습니다!");
+            }
+        }
+
+        function placeInBasket(targetType) {
+            if (dev5CardIdx >= plantsData.length) return;
+            const currentPlant = plantsData[dev5CardIdx];
+
+            if (currentPlant.type === targetType) {
+                AudioEngine.playChime();
+                sortedBaskets[targetType].push(currentPlant);
+                dev5CardIdx++;
+
+                if (dev5CardIdx >= plantsData.length) {
+                    AudioEngine.playFanfare();
+                    state.starsCompleted[4] = true;
+                    updateStars();
+                    renderDev5();
+                    TTSEngine.speak("축하합니다! 모든 식물의 뿌리를 바르게 분류했어요.");
+                } else {
+                    renderDev5();
+                    TTSEngine.speak(`맞았어요! ${currentPlant.name}을 바구니에 넣었습니다.`);
+                }
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 한번 살펴볼까요?");
+            }
+        }
+
+        // 3. SUMMARY - 1: GUESS ROOT NAME
+        let sum1Index = 0;
+        const sum1Questions = [
+            { type: 'tap', name: '곧은 모양 뿌리' },
+            { type: 'fibrous', name: '수염 모양 뿌리' },
+            { type: 'tap', name: '곧은 모양 뿌리' }
+        ];
+
+        function renderSummary1() {
+            state.currentStage = 'summary-1';
+            updateStars();
+            const q = sum1Questions[sum1Index];
+            const container = document.getElementById('stage-content');
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-4xl">
+                    <div class="text-3xl font-black bg-white/90 px-8 py-2 rounded-2xl border-2 border-green-300">
+                        정리 1: 이 뿌리는 어떤 모양일까요? (${sum1Index + 1} / 3)
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border-4 border-emerald-400 shadow-xl my-2">
+                        ${q.type === 'tap' ? SVGLib.tapRoot(220, 220) : SVGLib.fibrousRoot(220, 220)}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 w-full">
+                        <button onclick="checkSum1Choice('tap')" class="btn-touch bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-3xl py-6 rounded-3xl border-4 border-amber-200">
+                            🌱 곧은 모양 뿌리
+                        </button>
+                        <button onclick="checkSum1Choice('fibrous')" class="btn-touch bg-sky-500 hover:bg-sky-600 text-white font-black text-3xl py-6 rounded-3xl border-4 border-sky-200">
+                            🌾 수염 모양 뿌리
+                        </button>
+                    </div>
+                </div>
+            `;
+            updateTitle("어떤 뿌리일까요?", "그림을 보고 알맞은 뿌리 이름을 고르세요.");
+        }
+
+        function checkSum1Choice(type) {
+            const q = sum1Questions[sum1Index];
+            if (q.type === type) {
+                AudioEngine.playChime();
+                TTSEngine.speak("딩동! 맞았어요!");
+                setTimeout(() => {
+                    if (sum1Index < sum1Questions.length - 1) {
+                        sum1Index++;
+                        renderSummary1();
+                    } else {
+                        jumpToStage('summary-2');
+                    }
+                }, 1200);
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 한번 뿌리 모양을 살펴볼까요?");
+            }
+        }
+
+        // 3. SUMMARY - 2: OX QUIZ
+        let sum2Index = 0;
+        const oxQuestions = [
+            { q: "강낭콩은 가운데 굵은 뿌리가 있어요.", ans: true },
+            { q: "옥수수 뿌리는 수염처럼 여러 개가 모여 있어요.", ans: true },
+            { q: "양파는 곧은 모양 뿌리예요.", ans: false }
+        ];
+
+        function renderSummary2() {
+            state.currentStage = 'summary-2';
+            updateStars();
+            const q = oxQuestions[sum2Index];
+            const container = document.getElementById('stage-content');
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-4xl">
+                    <div class="text-3xl font-black bg-white/90 px-8 py-2 rounded-2xl border-2 border-green-300">
+                        정리 2: OX 퀴즈 (${sum2Index + 1} / 3)
+                    </div>
+
+                    <div class="glass-card p-10 w-full text-center border-4 border-emerald-400 my-4">
+                        <div class="text-4xl font-black text-emerald-950 leading-relaxed">${q.q}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-12 w-full max-w-2xl">
+                        <button onclick="checkOXChoice(true)" class="btn-touch bg-red-500 hover:bg-red-600 text-white font-black text-6xl py-8 rounded-3xl border-4 border-red-300 shadow-xl">
+                            ⭕ 맞아요
+                        </button>
+                        <button onclick="checkOXChoice(false)" class="btn-touch bg-blue-500 hover:bg-blue-600 text-white font-black text-6xl py-8 rounded-3xl border-4 border-blue-300 shadow-xl">
+                            ❌ 아니에요
+                        </button>
+                    </div>
+                </div>
+            `;
+            updateTitle("OX 퀴즈", q.q);
+        }
+
+        function checkOXChoice(userAns) {
+            const q = oxQuestions[sum2Index];
+            if (q.ans === userAns) {
+                AudioEngine.playChime();
+                TTSEngine.speak("맞았어요! 잘했어요!");
+                setTimeout(() => {
+                    if (sum2Index < oxQuestions.length - 1) {
+                        sum2Index++;
+                        renderSummary2();
+                    } else {
+                        jumpToStage('summary-3');
+                    }
+                }, 1200);
+            } else {
+                AudioEngine.playTryAgain();
+                TTSEngine.speak("다시 생각해보세요.");
+            }
+        }
+
+        // 3. SUMMARY - 3: TODAY'S LESSON SUMMARY & CELEBRATION
+        function renderSummary3() {
+            state.currentStage = 'summary-3';
+            updateStars();
+            const container = document.getElementById('stage-content');
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-between h-full w-full max-w-5xl">
+                    <div class="text-3xl font-black bg-amber-300 text-amber-950 px-8 py-2 rounded-2xl border-2 border-amber-400 animate-pulse">
+                        🌟 오늘 배운 내용을 함께 정리해요!
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 w-full my-2">
+                        <!-- Taproot summary -->
+                        <button onclick="TTSEngine.speak('곧은 모양 뿌리는 가운데 굵고 곧게 뻗은 뿌리가 있어요. 강낭콩, 토마토, 딸기가 있습니다.')" class="btn-touch bg-white border-4 border-amber-400 p-6 rounded-3xl flex flex-col items-center gap-3 text-left">
+                            <div class="text-3xl font-black text-amber-900">🌱 곧은 모양 뿌리</div>
+                            ${SVGLib.tapRoot(120, 120)}
+                            <div class="text-2xl font-bold text-slate-700">가운데 굵고 곧게 뻗은 뿌리</div>
+                            <div class="bg-amber-100 px-4 py-2 rounded-xl font-bold text-amber-900">예: 강낭콩, 토마토, 딸기</div>
+                        </button>
+
+                        <!-- Fibrous root summary -->
+                        <button onclick="TTSEngine.speak('수염 모양 뿌리는 비슷한 굵기의 뿌리가 여러 개 모여 있어요. 옥수수, 양파, 대파가 있습니다.')" class="btn-touch bg-white border-4 border-sky-400 p-6 rounded-3xl flex flex-col items-center gap-3 text-left">
+                            <div class="text-3xl font-black text-sky-900">🌾 수염 모양 뿌리</div>
+                            ${SVGLib.fibrousRoot(120, 120)}
+                            <div class="text-2xl font-bold text-slate-700">비슷한 굵기가 여러 개 모인 뿌리</div>
+                            <div class="bg-sky-100 px-4 py-2 rounded-xl font-bold text-sky-900">예: 옥수수, 양파, 대파</div>
+                        </button>
+                    </div>
+
+                    <div class="bg-emerald-600 text-white font-black text-4xl px-12 py-4 rounded-3xl shadow-xl">
+                        🌟 공부 끝! 참 잘했어요! 🌟
+                    </div>
+                </div>
+            `;
+            AudioEngine.playFanfare();
+            updateTitle(
+                "오늘 배운 것",
+                "오늘은 식물의 뿌리를 살펴보고 뿌리 모양에 따라 식물을 나누어 보았어요. 참 잘했어요!"
+            );
+        }
+
+        /* NAVIGATION CONTROL ROUTER */
+        function jumpToStage(stageKey) {
+            state.currentStage = stageKey;
+            switch(stageKey) {
+                case 'home': renderHome(); break;
+                case 'intro-1': renderIntro1(); break;
+                case 'intro-2': renderIntro2(); break;
+                case 'dev-menu': renderDevMenu(); break;
+                case 'dev-1': renderDev1(); break;
+                case 'dev-2': renderDev2(); break;
+                case 'dev-3': dev3Index = 0; renderDev3(); break;
+                case 'dev-4': dev4Step = 0; renderDev4(); break;
+                case 'dev-5': dev5CardIdx = 0; sortedBaskets = { tap: [], fibrous: [] }; renderDev5(); break;
+                case 'summary-1': sum1Index = 0; renderSummary1(); break;
+                case 'summary-2': sum2Index = 0; renderSummary2(); break;
+                case 'summary-3': renderSummary3(); break;
+            }
+        }
+
+        function goHome() {
+            jumpToStage('home');
+        }
+
+        function nextStep() {
+            const stages = [
+                'home', 'intro-1', 'intro-2', 'dev-menu', 
+                'dev-1', 'dev-2', 'dev-3', 'dev-4', 'dev-5', 
+                'summary-1', 'summary-2', 'summary-3'
+            ];
+            const currIdx = stages.indexOf(state.currentStage);
+            if (currIdx >= 0 && currIdx < stages.length - 1) {
+                jumpToStage(stages[currIdx + 1]);
+            } else {
+                jumpToStage('home');
+            }
+        }
+
+        /* TEACHER SETTINGS MODAL FUNCTIONS */
+        function toggleTeacherMenu() {
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleTTS(enabled) {
+            TTSEngine.enabled = enabled;
+            if (!enabled) TTSEngine.stop();
+        }
+
+        function toggleSFX(enabled) {
+            AudioEngine.enabled = enabled;
+        }
+
+        function resetCurrentStage() {
+            jumpToStage(state.currentStage);
+            toggleTeacherMenu();
+        }
+
+        function showAnswerDirectly() {
+            toggleTeacherMenu();
+            if (state.currentStage === 'dev-1') checkDev1Choice('tap');
+            else if (state.currentStage === 'dev-2') selectMatchRoot('tap');
+            else if (state.currentStage === 'dev-3') checkDev3Choice(plantsData[dev3Index].type);
+            else if (state.currentStage === 'dev-5') {
+                dev5CardIdx = plantsData.length;
+                sortedBaskets.tap = plantsData.filter(p => p.type === 'tap');
+                sortedBaskets.fibrous = plantsData.filter(p => p.type === 'fibrous');
+                renderDev5();
+            }
+        }
+
+        /* APP INITIALIZATION */
+        window.onload = function() {
+            // Start at Home
+            renderHome();
+        };
+    </script>
+</body>
+</html>

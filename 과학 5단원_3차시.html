@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌱 식물 탐험대 - 줄기와 잎 관찰하기</title>
+    <!-- Google Fonts & Tailwind CSS for modern responsive layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --mint-bg: #E8F5E9;
+            --soft-yellow: #FFF9C4;
+            --warm-cream: #FDFBF7;
+            --accent-orange: #FF9800;
+            --accent-blue: #1976D2;
+            --accent-sky: #E1F5FE;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #fefce8 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .font-jua {
+            font-family: 'Jua', 'Noto Sans KR', sans-serif;
+        }
+
+        /* Large touch-friendly responsive button styles */
+        .btn-touch {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-height: 72px;
+            font-size: 28px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-radius: 24px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+        }
+        .btn-touch:active, .btn-touch.active-touch {
+            transform: scale(0.95);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Interactive Plant Cards */
+        .plant-card {
+            background: white;
+            border-radius: 28px;
+            border: 5px solid transparent;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transition: all 0.25s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        .plant-card:hover, .plant-card:focus {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(0,0,0,0.15);
+        }
+        .plant-card.selected {
+            border-color: #FF9800;
+            background-color: #FFF3E0;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 6px rgba(255, 152, 0, 0.35);
+        }
+        .plant-card.placed {
+            opacity: 0.35;
+            pointer-events: none;
+            filter: grayscale(80%);
+        }
+
+        /* Drop Zones */
+        .drop-box {
+            background: rgba(255, 255, 255, 0.9);
+            border: 5px dashed #94a3b8;
+            border-radius: 32px;
+            min-height: 320px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+        .drop-box.target-hover {
+            border-color: #22c55e;
+            background: #dcfce7;
+            transform: scale(1.02);
+        }
+
+        /* Animations */
+        @keyframes correctPop {
+            0% { transform: scale(0.85); opacity: 0; }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .anim-pop {
+            animation: correctPop 0.5s ease forwards;
+        }
+
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-12px); }
+            40%, 80% { transform: translateX(12px); }
+        }
+        .anim-shake {
+            animation: wrongShake 0.5s ease;
+        }
+
+        @keyframes sparkleAnim {
+            0% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.3) rotate(180deg); }
+            100% { opacity: 0; transform: scale(1.6) rotate(360deg); }
+        }
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkleAnim 0.8s ease-out forwards;
+        }
+
+        /* SVG Line Canvas for Activity 2 */
+        #match-svg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Dialog Modal */
+        .modal-backdrop {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Custom Scrollbar for Teacher Dashboard */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen p-4 md:p-6 lg:p-8">
+
+    <!-- Top Progress Bar (Hidden on Login & Finish screens) -->
+    <header id="top-nav-bar" class="w-full max-w-6xl mx-auto mb-4 bg-white/95 backdrop-blur-md rounded-3xl p-4 shadow-lg border border-emerald-100 flex flex-wrap items-center justify-between gap-4 hidden">
+        <!-- Stage Steps -->
+        <div class="flex items-center gap-3">
+            <div class="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-2xl font-jua text-2xl flex items-center gap-2">
+                <span id="stage-badge-icon">🌻</span>
+                <span id="stage-badge-title">도입</span>
+            </div>
+            <div id="step-indicators" class="flex gap-2 text-2xl tracking-widest text-emerald-600 font-bold">
+                <!-- Dots rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Student Tag & Audio helper -->
+        <div class="flex items-center gap-3">
+            <div class="px-5 py-2 bg-amber-100 text-amber-900 rounded-2xl text-xl font-bold flex items-center gap-2">
+                <span>👦 학생 :</span>
+                <span id="user-display-name" class="font-jua text-2xl text-amber-700">홍길동</span>
+            </div>
+            <button onclick="speakCurrentInstruction()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-2xl text-xl font-bold flex items-center gap-2 shadow transition">
+                <span>🔊</span> <span>다시 듣기</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="app-main-container" class="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-center items-center relative">
+
+        <!-- SCREEN 0: LOGIN & USER SELECT -->
+        <section id="screen-login" class="w-full flex flex-col items-center justify-center p-6 text-center max-w-3xl bg-white/90 backdrop-blur rounded-3xl shadow-2xl border-4 border-emerald-300">
+            <div class="text-7xl mb-3">🌱</div>
+            <h1 class="font-jua text-5xl md:text-6xl text-emerald-800 mb-3 tracking-tight">식물 탐험대</h1>
+            <p class="text-2xl md:text-3xl text-emerald-700 font-bold mb-8">"줄기와 잎을 관찰하고 분류해요!"</p>
+
+            <!-- Mode Tabs -->
+            <div class="flex w-full max-w-md gap-4 mb-8">
+                <button id="tab-btn-student" onclick="setLoginTab('student')" class="flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-emerald-600 text-white shadow-lg">
+                    🎒 학생
+                </button>
+                <button id="tab-btn-teacher" onclick="setLoginTab('teacher')" class="flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    👩‍🏫 교사
+                </button>
+            </div>
+
+            <!-- Student Login Box -->
+            <div id="login-box-student" class="w-full max-w-md flex flex-col gap-6">
+                <div class="text-left">
+                    <label for="input-student-name" class="block text-2xl font-bold text-slate-700 mb-2">이름을 입력하세요</label>
+                    <input type="text" id="input-student-name" placeholder="예: 김민준" maxlength="10" 
+                           class="w-full text-3xl p-5 border-4 border-emerald-300 focus:border-emerald-600 rounded-2xl text-center outline-none bg-emerald-50/50 font-bold">
+                </div>
+                <button onclick="startStudentSession()" class="btn-touch w-full bg-emerald-600 hover:bg-emerald-700 text-white text-3xl py-5">
+                    🚀 학습 시작하기
+                </button>
+            </div>
+
+            <!-- Teacher Login Box -->
+            <div id="login-box-teacher" class="w-full max-w-md flex flex-col gap-5 hidden">
+                <div class="text-left">
+                    <label for="input-teacher-name" class="block text-xl font-bold text-slate-700 mb-1">교사 이름</label>
+                    <input type="text" id="input-teacher-name" placeholder="선생님 성함" 
+                           class="w-full text-2xl p-4 border-4 border-slate-300 rounded-2xl text-center outline-none bg-slate-50 font-bold">
+                </div>
+                <div class="text-left">
+                    <label for="input-teacher-pw" class="block text-xl font-bold text-slate-700 mb-1">비밀번호</label>
+                    <input type="password" id="input-teacher-pw" autocomplete="off" placeholder="" 
+                           class="w-full text-2xl p-4 border-4 border-slate-300 rounded-2xl text-center outline-none bg-slate-50 font-bold tracking-widest">
+                </div>
+                <div id="teacher-pw-msg" class="text-red-500 font-bold text-xl min-h-[28px]"></div>
+                <button onclick="checkTeacherLogin()" class="btn-touch w-full bg-blue-600 hover:bg-blue-700 text-white text-3xl py-4">
+                    🔑 교사용 대시보드 입장
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 1: 도입 - 활동 1. 식물 줄기 관찰 -->
+        <section id="screen-act-1" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-6">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">🌻 식물을 자세히 살펴볼까요?</h2>
+                <p class="text-2xl text-slate-700 font-bold">해바라기와 나팔꽃의 줄기를 터치하여 관찰해 보세요.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mb-6">
+                <!-- Sunflower Card -->
+                <div id="card-stem-sunflower" onclick="inspectStem('sunflower')" class="plant-card p-6 cursor-pointer border-4 border-amber-300 hover:border-amber-500">
+                    <div class="w-48 h-48 rounded-full bg-amber-50 border-4 border-amber-400 flex items-center justify-center text-8xl shadow-inner mb-4 transition transform duration-300" id="zoom-sunflower">
+                        🌻
+                    </div>
+                    <h3 class="font-jua text-3xl text-amber-900 mb-1">해바라기</h3>
+                    <div class="p-3 bg-amber-100 rounded-xl text-xl font-bold text-amber-800 text-center w-full">
+                        📏 굵고 곧은 줄기
+                    </div>
+                </div>
+
+                <!-- Morning Glory Card -->
+                <div id="card-stem-morning" onclick="inspectStem('morningglory')" class="plant-card p-6 cursor-pointer border-4 border-purple-300 hover:border-purple-500">
+                    <div class="w-48 h-48 rounded-full bg-purple-50 border-4 border-purple-400 flex items-center justify-center text-8xl shadow-inner mb-4 transition transform duration-300" id="zoom-morning">
+                        🌺
+                    </div>
+                    <h3 class="font-jua text-3xl text-purple-900 mb-1">나팔꽃</h3>
+                    <div class="p-3 bg-purple-100 rounded-xl text-xl font-bold text-purple-800 text-center w-full">
+                        🌀 가늘고 감는 줄기
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz prompt after viewing both or directly -->
+            <div id="act1-quiz-box" class="w-full max-w-3xl bg-white/95 p-6 rounded-3xl border-4 border-emerald-400 shadow-xl text-center mb-6">
+                <p class="font-jua text-3xl text-emerald-900 mb-4">❓ 어느 줄기가 더 굵어 보이나요?</p>
+                <div class="flex justify-center gap-6">
+                    <button onclick="answerAct1('sunflower')" class="btn-touch px-10 py-4 bg-amber-500 hover:bg-amber-600 text-white text-3xl">
+                        🌻 해바라기
+                    </button>
+                    <button onclick="answerAct1('morningglory')" class="btn-touch px-10 py-4 bg-purple-500 hover:bg-purple-600 text-white text-3xl">
+                        🌺 나팔꽃
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: 전개 - 활동 2. 줄기와 특징 연결하기 -->
+        <section id="screen-act-2" class="w-full hidden flex flex-col items-center relative">
+            <svg id="match-svg-canvas"></svg>
+
+            <div class="text-center mb-6">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">🌱 줄기와 특징을 연결해요!</h2>
+                <p class="text-2xl text-slate-700 font-bold">왼쪽 줄기 그림을 누르고, 오른쪽의 알맞은 설명을 눌러주세요.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-12 w-full max-w-4xl my-4 relative z-20">
+                <!-- Left options -->
+                <div class="flex flex-col gap-6">
+                    <div id="match-left-1" onclick="selectMatchLeft(1)" class="plant-card flex-row justify-start gap-6 p-5 border-4 border-emerald-400">
+                        <span class="text-7xl">🌲</span>
+                        <div class="text-left">
+                            <span class="font-jua text-3xl text-emerald-800 block">굵은 줄기</span>
+                            <span class="text-slate-500 text-lg">나무/해바라기 등</span>
+                        </div>
+                    </div>
+                    <div id="match-left-2" onclick="selectMatchLeft(2)" class="plant-card flex-row justify-start gap-6 p-5 border-4 border-emerald-400">
+                        <span class="text-7xl">🌿</span>
+                        <div class="text-left">
+                            <span class="font-jua text-3xl text-emerald-800 block">가는 줄기</span>
+                            <span class="text-slate-500 text-lg">나팔꽃/호박 등</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right options -->
+                <div class="flex flex-col gap-6">
+                    <button id="match-right-2" onclick="selectMatchRight(2)" class="btn-touch w-full h-[120px] bg-blue-600 hover:bg-blue-700 text-white text-3xl px-6">
+                        가늘고 길어요
+                    </button>
+                    <button id="match-right-1" onclick="selectMatchRight(1)" class="btn-touch w-full h-[120px] bg-emerald-600 hover:bg-emerald-700 text-white text-3xl px-6">
+                        굵고 곧아요
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: 전개 - 활동 3. 줄기에 따라 식물 분류하기 -->
+        <section id="screen-act-3" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-4">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-1">🌳 줄기 모양에 따라 분류해요</h2>
+                <p class="text-2xl text-slate-700 font-bold">식물을 누른 다음 넣고 싶은 상자를 누르거나 끌어다 놓으세요.</p>
+            </div>
+
+            <!-- Two Drop Boxes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mb-6">
+                <!-- Box 1: 굵고 곧은 줄기 -->
+                <div id="box-stem-thick" onclick="handleBoxClick('stem', 'thick')" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'stem', 'thick')" 
+                     class="drop-box border-emerald-500 bg-emerald-50/70">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-4xl">🌳</span>
+                        <h3 class="font-jua text-3xl text-emerald-800">줄기가 굵고 곧은 식물</h3>
+                    </div>
+                    <div id="box-stem-thick-items" class="flex flex-wrap gap-3 justify-center w-full min-h-[160px]"></div>
+                </div>
+
+                <!-- Box 2: 가늘고 감는 줄기 -->
+                <div id="box-stem-thin" onclick="handleBoxClick('stem', 'thin')" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'stem', 'thin')" 
+                     class="drop-box border-sky-500 bg-sky-50/70">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-4xl">🌿</span>
+                        <h3 class="font-jua text-3xl text-sky-800">줄기가 가늘고 긴 식물</h3>
+                    </div>
+                    <div id="box-stem-thin-items" class="flex flex-wrap gap-3 justify-center w-full min-h-[160px]"></div>
+                </div>
+            </div>
+
+            <!-- Plant Cards Tray -->
+            <div id="tray-stem-cards" class="flex flex-wrap justify-center gap-5 w-full max-w-5xl">
+                <!-- 대나무, 소나무, 등나무, 호박 -->
+            </div>
+        </section>
+
+        <!-- SCREEN 4: 전개 - 활동 4. 잎 관찰하기 -->
+        <section id="screen-act-4" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-6">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">🍃 잎은 어떻게 생겼을까요?</h2>
+                <p class="text-2xl text-slate-700 font-bold">가지와 강아지풀의 잎을 터치하여 자세히 살펴보세요.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mb-6">
+                <!-- Eggplant Card -->
+                <div id="card-leaf-eggplant" onclick="inspectLeaf('eggplant')" class="plant-card p-6 cursor-pointer border-4 border-indigo-300 hover:border-indigo-500">
+                    <div class="w-48 h-48 rounded-full bg-indigo-50 border-4 border-indigo-400 flex items-center justify-center text-8xl shadow-inner mb-4 transition transform duration-300" id="zoom-eggplant">
+                        🍆
+                    </div>
+                    <h3 class="font-jua text-3xl text-indigo-900 mb-1">가지</h3>
+                    <div class="p-3 bg-indigo-100 rounded-xl text-xl font-bold text-indigo-800 text-center w-full">
+                        🍀 둥글고 넓은 잎
+                    </div>
+                </div>
+
+                <!-- Foxtail Card -->
+                <div id="card-leaf-foxtail" onclick="inspectLeaf('foxtail')" class="plant-card p-6 cursor-pointer border-4 border-lime-300 hover:border-lime-500">
+                    <div class="w-48 h-48 rounded-full bg-lime-50 border-4 border-lime-400 flex items-center justify-center text-8xl shadow-inner mb-4 transition transform duration-300" id="zoom-foxtail">
+                        🌾
+                    </div>
+                    <h3 class="font-jua text-3xl text-lime-900 mb-1">강아지풀</h3>
+                    <div class="p-3 bg-lime-100 rounded-xl text-xl font-bold text-lime-800 text-center w-full">
+                        🌿 얇고 긴 잎
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaf quick touch question -->
+            <div id="act4-quiz-box" class="w-full max-w-3xl bg-white/95 p-6 rounded-3xl border-4 border-emerald-400 shadow-xl text-center mb-4">
+                <p class="font-jua text-3xl text-emerald-900 mb-4">❓ 둥글고 넓은 잎을 가진 식물을 골라보세요!</p>
+                <div class="flex justify-center gap-6">
+                    <button onclick="answerAct4('eggplant')" class="btn-touch px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-3xl">
+                        🍆 가지
+                    </button>
+                    <button onclick="answerAct4('foxtail')" class="btn-touch px-10 py-4 bg-lime-600 hover:bg-lime-700 text-white text-3xl">
+                        🌾 강아지풀
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: 전개 - 활동 5. 잎 모양에 따라 분류하기 -->
+        <section id="screen-act-5" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-4">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-1">🍀 잎 모양에 따라 분류해요</h2>
+                <p class="text-2xl text-slate-700 font-bold">식물의 잎을 알맞은 모양 상자로 분류해 주세요.</p>
+            </div>
+
+            <!-- Two Leaf Boxes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mb-6">
+                <!-- Box 1: 둥글고 넓은 잎 -->
+                <div id="box-leaf-round" onclick="handleBoxClick('leaf', 'round')" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'leaf', 'round')" 
+                     class="drop-box border-emerald-500 bg-emerald-50/70">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-4xl">🍀</span>
+                        <h3 class="font-jua text-3xl text-emerald-800">잎이 둥글고 넓은 식물</h3>
+                    </div>
+                    <div id="box-leaf-round-items" class="flex flex-wrap gap-3 justify-center w-full min-h-[160px]"></div>
+                </div>
+
+                <!-- Box 2: 얇고 긴 잎 -->
+                <div id="box-leaf-thin" onclick="handleBoxClick('leaf', 'thin')" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'leaf', 'thin')" 
+                     class="drop-box border-amber-500 bg-amber-50/70">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-4xl">🌾</span>
+                        <h3 class="font-jua text-3xl text-amber-800">잎이 얇고 긴 식물</h3>
+                    </div>
+                    <div id="box-leaf-thin-items" class="flex flex-wrap gap-3 justify-center w-full min-h-[160px]"></div>
+                </div>
+            </div>
+
+            <!-- Plant Cards Tray -->
+            <div id="tray-leaf-cards" class="flex flex-wrap justify-center gap-5 w-full max-w-5xl">
+                <!-- 연꽃, 강낭콩, 벼, 소나무 -->
+            </div>
+        </section>
+
+        <!-- SCREEN 6: 전개 - 활동 6. 조건에 맞는 그림 바르게 넣기 -->
+        <section id="screen-act-6" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-4">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">🧺 상자에 쏙! 알맞은 식물 찾기</h2>
+                <p id="act6-instruction-text" class="text-3xl text-blue-700 font-bold bg-blue-50 px-6 py-3 rounded-2xl inline-block border-2 border-blue-200">
+                    "이곳에 '잎이 얇고 긴 식물'을 모두 넣어 주세요."
+                </p>
+            </div>
+
+            <!-- Target Box -->
+            <div class="w-full max-w-3xl mb-6">
+                <div id="act6-target-box" onclick="handleAct6TargetBoxClick()" class="drop-box border-blue-500 bg-white min-h-[220px]">
+                    <h3 id="act6-target-title" class="font-jua text-3xl text-blue-800 mb-3">🌾 얇고 긴 잎 식물 모음 바구니</h3>
+                    <div id="act6-target-items" class="flex flex-wrap gap-4 justify-center"></div>
+                </div>
+            </div>
+
+            <!-- Candidates Tray -->
+            <div id="act6-candidate-tray" class="flex flex-wrap justify-center gap-5 w-full max-w-4xl">
+                <!-- 연꽃, 벼, 강낭콩, 소나무 -->
+            </div>
+        </section>
+
+        <!-- SCREEN 7: 전개 - 활동 7. 식물 탐정 - 무엇일까요? -->
+        <section id="screen-act-7" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-4">
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">🕵️ 식물 탐정 - 누구일까요?</h2>
+                <p class="text-2xl text-slate-700 font-bold">확대된 힌트와 설명을 듣고 어떤 식물인지 찾아보세요.</p>
+            </div>
+
+            <!-- Detective Magnifier Clue -->
+            <div class="w-full max-w-xl bg-amber-50 p-6 rounded-3xl border-4 border-amber-400 shadow-lg flex flex-col items-center mb-6">
+                <div class="relative w-36 h-36 rounded-full bg-white border-8 border-amber-500 flex items-center justify-center text-7xl shadow-md mb-3 overflow-hidden">
+                    <span id="detective-clue-icon" class="scale-150">🌿</span>
+                </div>
+                <div id="detective-hint-text" class="font-jua text-3xl text-amber-900 text-center">
+                    "나는 다른 나무나 기둥을 둘둘 감으며 자라는 가는 줄기에요!"
+                </div>
+            </div>
+
+            <!-- Candidate options -->
+            <div id="detective-options" class="flex flex-wrap justify-center gap-6 w-full max-w-4xl">
+                <!-- Dynamic cards -->
+            </div>
+        </section>
+
+        <!-- SCREEN 8: 정리 - 오늘 배운 내용 확인하기 (4문항 순차 진행) -->
+        <section id="screen-act-summary" class="w-full hidden flex flex-col items-center">
+            <div class="text-center mb-4">
+                <div class="inline-block px-4 py-1 bg-amber-200 text-amber-900 rounded-full font-bold text-xl mb-2">
+                    정리 문제 <span id="summary-q-num">1</span> / 4
+                </div>
+                <h2 class="font-jua text-4xl md:text-5xl text-emerald-900 mb-2">⭐ 오늘 배운 내용을 확인해요!</h2>
+                <p id="summary-q-instruction" class="text-3xl text-emerald-700 font-bold bg-emerald-50 px-6 py-2 rounded-2xl inline-block">
+                    줄기가 굵은 모양인 식물을 찾아보세요.
+                </p>
+            </div>
+
+            <!-- Summary Options Grid -->
+            <div id="summary-options-container" class="grid grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-4xl my-6">
+                <!-- 3~4 Plant choices -->
+            </div>
+        </section>
+
+        <!-- SCREEN 9: 학습 완료 화면 -->
+        <section id="screen-finish" class="w-full hidden flex flex-col items-center text-center p-8 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-4 border-emerald-400 max-w-3xl">
+            <div class="text-8xl mb-4 anim-pop">🌟 ⭐ 🌟</div>
+            <h1 id="finish-student-title" class="font-jua text-5xl md:text-6xl text-emerald-800 mb-4">참 잘했어요!</h1>
+            <p id="finish-student-desc" class="text-3xl font-bold text-slate-700 mb-6 leading-relaxed">
+                오늘 식물 탐험을 훌륭하게 끝마쳤습니다!
+            </p>
+            
+            <div class="p-6 bg-emerald-50 rounded-3xl border-2 border-emerald-200 w-full mb-8">
+                <div class="text-3xl font-jua text-emerald-900 mb-2">🌱 획득한 탐험가 칭호</div>
+                <div class="text-4xl font-jua text-amber-600">"최고의 식물 박사님" 🏅</div>
+            </div>
+
+            <button onclick="resetAppToHome()" class="btn-touch w-full py-5 bg-emerald-600 hover:bg-emerald-700 text-white text-3xl">
+                🏠 처음 화면으로 (다음 학생)
+            </button>
+        </section>
+
+        <!-- SCREEN 10: 교사용 대시보드 및 상세 평가 분석 -->
+        <section id="screen-teacher-dashboard" class="w-full hidden flex flex-col">
+            <!-- Header bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-6 rounded-3xl shadow-lg border border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span class="text-5xl">👩‍🏫</span>
+                    <div>
+                        <h1 class="font-jua text-4xl text-slate-800">식물 수업 학생별 평가 결과</h1>
+                        <p class="text-slate-500 font-bold">10점 만점 오류 감점제 (오답 1회당 0.5점 감점)</p>
+                    </div>
+                </div>
+                <button onclick="resetAppToHome()" class="btn-touch px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white text-2xl">
+                    🚪 로그아웃
+                </button>
+            </div>
+
+            <!-- KPI Stats Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-3xl shadow border-t-8 border-emerald-500 text-center">
+                    <p class="text-xl font-bold text-slate-500">참여 학생 수</p>
+                    <p id="stat-total-students" class="text-4xl font-jua text-emerald-700 mt-2">0명</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow border-t-8 border-blue-500 text-center">
+                    <p class="text-xl font-bold text-slate-500">활동 완료 학생</p>
+                    <p id="stat-completed-students" class="text-4xl font-jua text-blue-700 mt-2">0명</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow border-t-8 border-amber-500 text-center">
+                    <p class="text-xl font-bold text-slate-500">학급 평균 점수</p>
+                    <p id="stat-class-avg" class="text-4xl font-jua text-amber-700 mt-2">10.0점</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow border-t-8 border-rose-500 text-center">
+                    <p class="text-xl font-bold text-slate-500">전체 발생 오답</p>
+                    <p id="stat-total-errors" class="text-4xl font-jua text-rose-700 mt-2">0회</p>
+                </div>
+            </div>
+
+            <!-- Action Toolbar -->
+            <div class="flex flex-wrap gap-3 mb-4 justify-between items-center bg-white p-4 rounded-2xl shadow">
+                <div class="flex gap-3">
+                    <button onclick="renderTeacherDashboard()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-lg flex items-center gap-2">
+                        🔄 결과 새로고침
+                    </button>
+                    <button onclick="downloadResultsCSV()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg flex items-center gap-2">
+                        ⬇ CSV 저장
+                    </button>
+                </div>
+                <button onclick="promptClearRecords()" class="px-5 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-lg flex items-center gap-2">
+                    🗑 평가 기록 초기화
+                </button>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 mb-6">
+                <div class="overflow-x-auto max-h-[500px]">
+                    <table class="w-full text-center border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 text-lg sticky top-0 z-10 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">번호</th>
+                                <th class="p-4">학생 이름</th>
+                                <th class="p-4">활동 일시</th>
+                                <th class="p-4">줄기 관찰</th>
+                                <th class="p-4">줄기 분류</th>
+                                <th class="p-4">잎 관찰</th>
+                                <th class="p-4">잎 분류</th>
+                                <th class="p-4">정리 문제</th>
+                                <th class="p-4">총 오류</th>
+                                <th class="p-4">총 시도</th>
+                                <th class="p-4">10점 점수</th>
+                                <th class="p-4">완료</th>
+                                <th class="p-4">상세보기</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-table-body" class="text-lg font-medium text-slate-700 divide-y divide-slate-100">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Detailed Diagnostic Modal -->
+            <div id="student-detail-modal" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl border-4 border-emerald-400 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <h3 class="font-jua text-3xl text-emerald-900" id="modal-student-name">학생 상세 분석</h3>
+                        <button onclick="closeStudentDetailModal()" class="text-slate-400 hover:text-slate-600 text-3xl font-bold">&times;</button>
+                    </div>
+                    <div id="modal-detail-content" class="flex flex-col gap-4 text-xl">
+                        <!-- Injected -->
+                    </div>
+                    <button onclick="closeStudentDetailModal()" class="btn-touch w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white text-2xl py-3">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Floating Navigation (Prev / Next Buttons) -->
+    <footer id="bottom-nav-bar" class="w-full max-w-6xl mx-auto mt-4 flex items-center justify-between gap-4 hidden">
+        <button id="btn-global-prev" onclick="navigatePreviousStep()" class="btn-touch px-8 py-4 bg-slate-500 hover:bg-slate-600 text-white text-2xl">
+            👈 이전
+        </button>
+
+        <div id="feedback-live-banner" class="flex-1 text-center font-jua text-3xl text-emerald-800 transition-all duration-300">
+            <!-- Dynamic feedback prompt -->
+        </div>
+
+        <button id="btn-global-next" onclick="navigateNextStep()" class="btn-touch px-10 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-2xl">
+            다음으로 👉
+        </button>
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           1. Application State & Storage
+           ========================================================================== */
+        const APP_STATE = {
+            currentScreenId: 'screen-login',
+            currentStepIndex: 0, // 0: Login, 1: Act1, 2: Act2, 3: Act3, 4: Act4, 5: Act5, 6: Act6, 7: Act7, 8: Summary, 9: Finish, 10: Teacher
+            currentStudent: {
+                name: '',
+                startTime: null,
+                completed: false,
+                attempts: 0,
+                totalErrors: 0,
+                errors: {
+                    stemObserve: 0,
+                    stemClassify: 0,
+                    leafObserve: 0,
+                    leafClassify: 0,
+                    filterBasket: 0,
+                    detective: 0,
+                    summaryQuiz: 0
+                },
+                historyLog: []
+            },
+            selectedCard: null, // Touch-selection buffer
+            act2LeftSelected: null,
+            act2Matches: {}, // { 1: 1, 2: 2 }
+            summaryQuizIndex: 0
+        };
+
+        const STORAGE_KEY = 'PLANT_EXPLORER_STUDENT_RECORDS_V2';
+
+        // Textbook Plant Data Definitions
+        const PLANT_DATABASE = {
+            sunflower: { name: '해바라기', emoji: '🌻', stemType: 'thick', stemDesc: '굵고 곧아요', leafType: 'round' },
+            morningglory: { name: '나팔꽃', emoji: '🌺', stemType: 'thin', stemDesc: '가늘고 길어요', leafType: 'round' },
+            bamboo: { name: '대나무', emoji: '🎋', stemType: 'thick', stemDesc: '굵고 곧아요', leafType: 'thin' },
+            pine: { name: '소나무', emoji: '🌲', stemType: 'thick', stemDesc: '굵고 곧아요', leafType: 'thin' },
+            wisteria: { name: '등나무', emoji: '🍇', stemType: 'thin', stemDesc: '가늘고 길어요', leafType: 'round' },
+            pumpkin: { name: '호박', emoji: '🎃', stemType: 'thin', stemDesc: '가늘고 길어요', leafType: 'round' },
+            eggplant: { name: '가지', emoji: '🍆', stemType: 'thick', leafType: 'round', leafDesc: '둥글고 넓어요' },
+            foxtail: { name: '강아지풀', emoji: '🌾', stemType: 'thin', leafType: 'thin', leafDesc: '얇고 길어요' },
+            lotus: { name: '연꽃', emoji: '🪷', stemType: 'thick', leafType: 'round', leafDesc: '둥글고 넓어요' },
+            bean: { name: '강낭콩', emoji: '🫘', stemType: 'thin', leafType: 'round', leafDesc: '둥글고 넓어요' },
+            rice: { name: '벼', emoji: '🌾', stemType: 'thin', leafType: 'thin', leafDesc: '얇고 길어요' }
+        };
+
+        /* ==========================================================================
+           2. Audio & Speech Synthesis Engine (TTS + Synthesized Effects)
+           ========================================================================== */
+        const AudioEngine = {
+            audioCtx: null,
+
+            init() {
+                if (!this.audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.audioCtx = new AudioContext();
+                    }
+                }
+            },
+
+            playChime(type = 'success') {
+                try {
+                    this.init();
+                    if (!this.audioCtx) return;
+                    const ctx = this.audioCtx;
+                    const now = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    if (type === 'success') {
+                        // High melodic chime: C5 -> E5 -> G5
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(523.25, now);
+                        osc.frequency.setValueAtTime(659.25, now + 0.1);
+                        osc.frequency.setValueAtTime(783.99, now + 0.2);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                        osc.start(now);
+                        osc.stop(now + 0.5);
+                    } else if (type === 'sparkle') {
+                        // Sparkle arpeggio
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(587.33, now);
+                        osc.frequency.setValueAtTime(880.00, now + 0.1);
+                        osc.frequency.setValueAtTime(1174.66, now + 0.2);
+                        gain.gain.setValueAtTime(0.25, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                        osc.start(now);
+                        osc.stop(now + 0.6);
+                    } else {
+                        // Soft retry boing
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(260, now);
+                        osc.frequency.exponentialRampToValueAtTime(180, now + 0.25);
+                        gain.gain.setValueAtTime(0.25, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                    }
+                } catch (e) {
+                    console.log('AudioContext not allowed or supported yet', e);
+                }
+            },
+
+            speak(text) {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.88; // Slightly slower, clear tone for special education
+                utterance.pitch = 1.05;
+
+                // Attempt to pick a natural Korean voice if available
+                const voices = window.speechSynthesis.getVoices();
+                const koVoice = voices.find(v => v.lang.includes('ko') || v.lang.includes('KO'));
+                if (koVoice) utterance.voice = koVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        // Ensure voice list loaded
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {};
+        }
+
+        /* ==========================================================================
+           3. Step Management & Navigation Pipeline
+           ========================================================================== */
+        const STEPS = [
+            { id: 'screen-login', stage: '시작', icon: '🌱', dot: 0, title: '로그인' },
+            { id: 'screen-act-1', stage: '도입', icon: '🌻', dot: 1, title: '줄기 관찰' },
+            { id: 'screen-act-2', stage: '전개', icon: '🌱', dot: 2, title: '줄기 특징 연결' },
+            { id: 'screen-act-3', stage: '전개', icon: '🌳', dot: 3, title: '줄기 분류' },
+            { id: 'screen-act-4', stage: '전개', icon: '🍃', dot: 4, title: '잎 관찰' },
+            { id: 'screen-act-5', stage: '전개', icon: '🍀', dot: 5, title: '잎 분류' },
+            { id: 'screen-act-6', stage: '전개', icon: '🧺', dot: 6, title: '바구니 넣기' },
+            { id: 'screen-act-7', stage: '전개', icon: '🕵️', dot: 7, title: '식물 탐정' },
+            { id: 'screen-act-summary', stage: '정리', icon: '⭐', dot: 8, title: '정리 퀴즈' },
+            { id: 'screen-finish', stage: '완료', icon: '🌟', dot: 9, title: '학습 완료' },
+            { id: 'screen-teacher-dashboard', stage: '교사', icon: '👩‍🏫', dot: 10, title: '평가 대시보드' }
+        ];
+
+        function switchScreen(stepIndex) {
+            APP_STATE.currentStepIndex = stepIndex;
+            const targetStep = STEPS[stepIndex];
+            APP_STATE.currentScreenId = targetStep.id;
+
+            // Hide all screens
+            STEPS.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Show target screen
+            const activeEl = document.getElementById(targetStep.id);
+            if (activeEl) activeEl.classList.remove('hidden');
+
+            const isStudentFlow = stepIndex >= 1 && stepIndex <= 9;
+            const isFinished = stepIndex === 9;
+            const isLoginOrTeacher = stepIndex === 0 || stepIndex === 10;
+
+            const topNav = document.getElementById('top-nav-bar');
+            const bottomNav = document.getElementById('bottom-nav-bar');
+
+            if (isLoginOrTeacher) {
+                topNav.classList.add('hidden');
+                bottomNav.classList.add('hidden');
+            } else {
+                topNav.classList.remove('hidden');
+                bottomNav.classList.remove('hidden');
+
+                if (isFinished) {
+                    bottomNav.classList.add('hidden');
+                } else {
+                    bottomNav.classList.remove('hidden');
+                }
+
+                // Update stage badge
+                document.getElementById('stage-badge-icon').textContent = targetStep.icon;
+                document.getElementById('stage-badge-title').textContent = targetStep.stage;
+
+                // Update dots
+                renderStepDots(targetStep.stage);
+                document.getElementById('user-display-name').textContent = APP_STATE.currentStudent.name || '학생';
+            }
+
+            // Setup Screen Specific Logic
+            setupCurrentScreenContent(stepIndex);
+        }
+
+        function renderStepDots(stage) {
+            const container = document.getElementById('step-indicators');
+            let dotsHtml = '';
+            if (stage === '도입') {
+                dotsHtml = '<span class="text-emerald-600">●</span><span class="text-slate-300">○</span><span class="text-slate-300">○</span>';
+            } else if (stage === '전개') {
+                dotsHtml = '<span class="text-emerald-600">●</span><span class="text-emerald-600">●</span><span class="text-slate-300">○</span>';
+            } else if (stage === '정리' || stage === '완료') {
+                dotsHtml = '<span class="text-emerald-600">●</span><span class="text-emerald-600">●</span><span class="text-emerald-600">●</span>';
+            }
+            container.innerHTML = dotsHtml;
+        }
+
+        function navigateNextStep() {
+            if (APP_STATE.currentStepIndex < STEPS.length - 2) {
+                switchScreen(APP_STATE.currentStepIndex + 1);
+            }
+        }
+
+        function navigatePreviousStep() {
+            if (APP_STATE.currentStepIndex > 1) {
+                switchScreen(APP_STATE.currentStepIndex - 1);
+            }
+        }
+
+        /* ==========================================================================
+           4. Login & Authentication
+           ========================================================================== */
+        function setLoginTab(tab) {
+            const btnStudent = document.getElementById('tab-btn-student');
+            const btnTeacher = document.getElementById('tab-btn-teacher');
+            const boxStudent = document.getElementById('login-box-student');
+            const boxTeacher = document.getElementById('login-box-teacher');
+            const pwMsg = document.getElementById('teacher-pw-msg');
+            pwMsg.textContent = '';
+
+            if (tab === 'student') {
+                btnStudent.className = 'flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-emerald-600 text-white shadow-lg';
+                btnTeacher.className = 'flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-slate-200 text-slate-700 hover:bg-slate-300';
+                boxStudent.classList.remove('hidden');
+                boxTeacher.classList.add('hidden');
+            } else {
+                btnTeacher.className = 'flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-blue-600 text-white shadow-lg';
+                btnStudent.className = 'flex-1 py-4 text-3xl font-jua rounded-2xl transition bg-slate-200 text-slate-700 hover:bg-slate-300';
+                boxTeacher.classList.remove('hidden');
+                boxStudent.classList.add('hidden');
+                document.getElementById('input-teacher-pw').value = '';
+            }
+        }
+
+        function startStudentSession() {
+            const inputName = document.getElementById('input-student-name').value.trim();
+            if (!inputName) {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('이름을 입력해 주세요.');
+                document.getElementById('input-student-name').focus();
+                return;
+            }
+
+            // Fresh Student State
+            APP_STATE.currentStudent = {
+                name: inputName,
+                startTime: new Date().toISOString(),
+                completed: false,
+                attempts: 0,
+                totalErrors: 0,
+                errors: {
+                    stemObserve: 0,
+                    stemClassify: 0,
+                    leafObserve: 0,
+                    leafClassify: 0,
+                    filterBasket: 0,
+                    detective: 0,
+                    summaryQuiz: 0
+                },
+                historyLog: []
+            };
+
+            AudioEngine.playChime('sparkle');
+            AudioEngine.speak(`${inputName} 어린이, 식물 탐험을 시작합니다!`);
+            switchScreen(1); // To Act 1
+        }
+
+        function checkTeacherLogin() {
+            const pwInput = document.getElementById('input-teacher-pw').value;
+            const msgEl = document.getElementById('teacher-pw-msg');
+
+            if (pwInput === '0873') {
+                msgEl.textContent = '';
+                AudioEngine.playChime('success');
+                switchScreen(10); // Teacher Dashboard
+            } else {
+                AudioEngine.playChime('wrong');
+                msgEl.textContent = '비밀번호를 다시 확인해 주세요.';
+                AudioEngine.speak('비밀번호를 다시 확인해 주세요.');
+            }
+        }
+
+        /* ==========================================================================
+           5. Assessment Engine & localStorage Persistence
+           ========================================================================== */
+        function registerError(category, questionDesc) {
+            APP_STATE.currentStudent.attempts += 1;
+            APP_STATE.currentStudent.totalErrors += 1;
+            if (APP_STATE.currentStudent.errors[category] !== undefined) {
+                APP_STATE.currentStudent.errors[category] += 1;
+            }
+            APP_STATE.currentStudent.historyLog.push({
+                time: new Date().toLocaleTimeString(),
+                category: category,
+                question: questionDesc,
+                result: 'error'
+            });
+            saveCurrentStudentSession();
+        }
+
+        function registerSuccess(category, questionDesc) {
+            APP_STATE.currentStudent.attempts += 1;
+            APP_STATE.currentStudent.historyLog.push({
+                time: new Date().toLocaleTimeString(),
+                category: category,
+                question: questionDesc,
+                result: 'correct'
+            });
+            saveCurrentStudentSession();
+        }
+
+        function calculateScore(totalErrors) {
+            const calculated = 10 - (totalErrors * 0.5);
+            return Math.max(0, calculated).toFixed(1);
+        }
+
+        function saveCurrentStudentSession() {
+            if (!APP_STATE.currentStudent.name) return;
+            const allRecords = getStoredRecords();
+            // Match existing uncompleted record by name or append new
+            const existingIdx = allRecords.findIndex(r => r.name === APP_STATE.currentStudent.name && !r.completed);
+            
+            const recordObj = {
+                ...APP_STATE.currentStudent,
+                score: calculateScore(APP_STATE.currentStudent.totalErrors),
+                lastUpdated: new Date().toISOString()
+            };
+
+            if (existingIdx >= 0) {
+                allRecords[existingIdx] = recordObj;
+            } else {
+                allRecords.push(recordObj);
+            }
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
+            } catch (e) {
+                console.error('Storage quota exceeded', e);
+            }
+        }
+
+        function markSessionCompleted() {
+            APP_STATE.currentStudent.completed = true;
+            APP_STATE.currentStudent.endTime = new Date().toISOString();
+            saveCurrentStudentSession();
+        }
+
+        function getStoredRecords() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        /* ==========================================================================
+           6. Activity Interactive Implementations
+           ========================================================================== */
+
+        // Helper Visual Feedback
+        function showLiveFeedback(msg, isSuccess = true) {
+            const banner = document.getElementById('feedback-live-banner');
+            banner.textContent = msg;
+            banner.className = `flex-1 text-center font-jua text-3xl ${isSuccess ? 'text-emerald-700' : 'text-amber-700'} anim-pop`;
+            setTimeout(() => {
+                banner.textContent = '';
+            }, 3000);
+        }
+
+        function createSparkleAt(element) {
+            const rect = element.getBoundingClientRect();
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle text-5xl';
+            sparkle.innerHTML = '✨';
+            sparkle.style.left = `${rect.left + rect.width / 2 - 20}px`;
+            sparkle.style.top = `${rect.top + rect.height / 2 - 20}px`;
+            sparkle.style.position = 'fixed';
+            sparkle.style.zIndex = '999';
+            document.body.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 800);
+        }
+
+        // ------------------ Activity 1: 도입 관찰 ------------------
+        function inspectStem(type) {
+            AudioEngine.playChime('sparkle');
+            if (type === 'sunflower') {
+                const zoom = document.getElementById('zoom-sunflower');
+                zoom.classList.add('scale-125');
+                setTimeout(() => zoom.classList.remove('scale-125'), 600);
+                AudioEngine.speak('해바라기의 줄기는 굵고 곧게 자라요.');
+            } else {
+                const zoom = document.getElementById('zoom-morning');
+                zoom.classList.add('scale-125');
+                setTimeout(() => zoom.classList.remove('scale-125'), 600);
+                AudioEngine.speak('나팔꽃의 줄기는 가늘고 길게 자라요.');
+            }
+        }
+
+        function answerAct1(choice) {
+            if (choice === 'sunflower') {
+                AudioEngine.playChime('success');
+                AudioEngine.speak('맞았어요! 해바라기 줄기가 더 굵고 곧아요. 참 잘했어요!');
+                showLiveFeedback('🎉 맞았어요! 해바라기 줄기가 더 굵어요!');
+                registerSuccess('stemObserve', '굵은 줄기 찾기(해바라기 vs 나팔꽃)');
+                createSparkleAt(document.getElementById('card-stem-sunflower'));
+                setTimeout(() => navigateNextStep(), 2000);
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 살펴볼까요? 곧고 두꺼운 줄기를 찾아보세요.');
+                showLiveFeedback('🤔 다시 한번 살펴볼까요?', false);
+                registerError('stemObserve', '굵은 줄기 찾기(해바라기 vs 나팔꽃)');
+                const card = document.getElementById('card-stem-morning');
+                card.classList.add('anim-shake');
+                setTimeout(() => card.classList.remove('anim-shake'), 600);
+            }
+        }
+
+        // ------------------ Activity 2: 선 연결하기 ------------------
+        function initAct2() {
+            APP_STATE.act2LeftSelected = null;
+            APP_STATE.act2Matches = {};
+            redrawAct2Lines();
+            document.getElementById('match-left-1').classList.remove('selected', 'border-emerald-600');
+            document.getElementById('match-left-2').classList.remove('selected', 'border-emerald-600');
+            document.getElementById('match-right-1').classList.remove('bg-emerald-800');
+            document.getElementById('match-right-2').classList.remove('bg-blue-800');
+        }
+
+        function selectMatchLeft(id) {
+            AudioEngine.playChime('sparkle');
+            APP_STATE.act2LeftSelected = id;
+            document.getElementById('match-left-1').classList.toggle('selected', id === 1);
+            document.getElementById('match-left-2').classList.toggle('selected', id === 2);
+            if (id === 1) AudioEngine.speak('굵은 줄기입니다. 알맞은 설명을 오른쪽에 골라보세요.');
+            else AudioEngine.speak('가는 줄기입니다. 알맞은 설명을 오른쪽에 골라보세요.');
+        }
+
+        function selectMatchRight(id) {
+            if (!APP_STATE.act2LeftSelected) {
+                AudioEngine.speak('먼저 왼쪽의 줄기 그림을 선택해 주세요.');
+                return;
+            }
+
+            const leftId = APP_STATE.act2LeftSelected;
+            // Correct mapping: 1 (굵은 줄기) -> 1 (굵고 곧아요), 2 (가는 줄기) -> 2 (가늘고 길어요)
+            if (leftId === id) {
+                AudioEngine.playChime('success');
+                AudioEngine.speak('맞았어요! 바르게 연결했습니다!');
+                showLiveFeedback('✨ 잘했어요! 알맞게 연결되었어요!');
+                registerSuccess('stemObserve', `줄기 특징 선 연결 (ID: ${leftId})`);
+                APP_STATE.act2Matches[leftId] = id;
+                redrawAct2Lines();
+
+                // Check completion
+                if (Object.keys(APP_STATE.act2Matches).length === 2) {
+                    AudioEngine.playChime('sparkle');
+                    setTimeout(() => {
+                        AudioEngine.speak('모두 바르게 연결했어요! 다음 활동으로 가 볼까요?');
+                        setTimeout(navigateNextStep, 1500);
+                    }, 800);
+                }
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 생각해 볼까요? 줄기의 모양을 자세히 보세요.');
+                showLiveFeedback('다시 한번 생각해 볼까요?', false);
+                registerError('stemObserve', `줄기 특징 선 연결 오류 (Left: ${leftId}, Right: ${id})`);
+                const rightBtn = document.getElementById(`match-right-${id}`);
+                rightBtn.classList.add('anim-shake');
+                setTimeout(() => rightBtn.classList.remove('anim-shake'), 600);
+            }
+
+            // reset selection
+            APP_STATE.act2LeftSelected = null;
+            document.getElementById('match-left-1').classList.remove('selected');
+            document.getElementById('match-left-2').classList.remove('selected');
+        }
+
+        function redrawAct2Lines() {
+            const svg = document.getElementById('match-svg-canvas');
+            svg.innerHTML = '';
+            const containerRect = svg.getBoundingClientRect();
+
+            for (const [lId, rId] of Object.entries(APP_STATE.act2Matches)) {
+                const leftEl = document.getElementById(`match-left-${lId}`);
+                const rightEl = document.getElementById(`match-right-${rId}`);
+                if (!leftEl || !rightEl) continue;
+
+                const lRect = leftEl.getBoundingClientRect();
+                const rRect = rightEl.getBoundingClientRect();
+
+                const x1 = lRect.right - containerRect.left;
+                const y1 = lRect.top + lRect.height / 2 - containerRect.top;
+                const x2 = rRect.left - containerRect.left;
+                const y2 = rRect.top + rRect.height / 2 - containerRect.top;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', '#16a34a');
+                line.setAttribute('stroke-width', '8');
+                line.setAttribute('stroke-linecap', 'round');
+                line.setAttribute('stroke-dasharray', '12, 6');
+                svg.appendChild(line);
+            }
+        }
+
+        // ------------------ Activity 3: 줄기 분류하기 ------------------
+        const ACT3_PLANTS = ['bamboo', 'pine', 'wisteria', 'pumpkin'];
+        let act3Placed = {};
+
+        function initAct3() {
+            act3Placed = {};
+            APP_STATE.selectedCard = null;
+            document.getElementById('box-stem-thick-items').innerHTML = '';
+            document.getElementById('box-stem-thin-items').innerHTML = '';
+            const tray = document.getElementById('tray-stem-cards');
+            tray.innerHTML = '';
+
+            ACT3_PLANTS.forEach(pKey => {
+                const p = PLANT_DATABASE[pKey];
+                const card = document.createElement('div');
+                card.id = `card-act3-${pKey}`;
+                card.draggable = true;
+                card.ondragstart = (e) => e.dataTransfer.setData('plantKey', pKey);
+                card.onclick = () => handleCardSelect(pKey, 'act3');
+                card.className = 'plant-card w-44 p-4 border-4 border-emerald-300';
+                card.innerHTML = `
+                    <div class="text-7xl mb-2">${p.emoji}</div>
+                    <p class="font-jua text-2xl text-slate-800">${p.name}</p>
+                `;
+                tray.appendChild(card);
+            });
+        }
+
+        function handleCardSelect(plantKey, actType) {
+            AudioEngine.playChime('sparkle');
+            APP_STATE.selectedCard = { plantKey, actType };
+            // Highlight
+            document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+            const target = document.getElementById(`card-${actType}-${plantKey}`);
+            if (target) target.classList.add('selected');
+            const p = PLANT_DATABASE[plantKey];
+            AudioEngine.speak(`${p.name}입니다. 알맞은 상자를 터치해 보세요.`);
+        }
+
+        function handleBoxClick(category, targetType) {
+            if (!APP_STATE.selectedCard) {
+                AudioEngine.speak('먼저 넣고 싶은 식물 카드를 터치해 주세요.');
+                return;
+            }
+            const { plantKey, actType } = APP_STATE.selectedCard;
+            processDropAction(category, targetType, plantKey, actType);
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e, category, targetType) {
+            e.preventDefault();
+            const plantKey = e.dataTransfer.getData('plantKey');
+            if (plantKey) {
+                const actType = category === 'stem' ? 'act3' : 'act5';
+                processDropAction(category, targetType, plantKey, actType);
+            }
+        }
+
+        function processDropAction(category, targetType, plantKey, actType) {
+            const plant = PLANT_DATABASE[plantKey];
+            const isCorrect = (category === 'stem' && plant.stemType === targetType) ||
+                              (category === 'leaf' && plant.leafType === targetType);
+
+            if (isCorrect) {
+                AudioEngine.playChime('success');
+                AudioEngine.speak(`맞았어요! ${plant.name}을 바르게 분류했어요!`);
+                showLiveFeedback(`✨ 정답! ${plant.name}을 바르게 넣었습니다.`);
+                registerSuccess(`${category}Classify`, `${plant.name} ${category} 분류`);
+
+                // Move visual item inside container
+                const targetContainerId = category === 'stem' 
+                    ? (targetType === 'thick' ? 'box-stem-thick-items' : 'box-stem-thin-items')
+                    : (targetType === 'round' ? 'box-leaf-round-items' : 'box-leaf-thin-items');
+
+                const targetContainer = document.getElementById(targetContainerId);
+                const badge = document.createElement('div');
+                badge.className = 'p-3 bg-white rounded-2xl shadow-md border-2 border-emerald-400 flex items-center gap-2 anim-pop';
+                badge.innerHTML = `<span class="text-4xl">${plant.emoji}</span> <span class="font-jua text-xl">${plant.name}</span>`;
+                targetContainer.appendChild(badge);
+
+                // Disable card in tray
+                const originCard = document.getElementById(`card-${actType}-${plantKey}`);
+                if (originCard) originCard.classList.add('placed');
+
+                if (category === 'stem') act3Placed[plantKey] = true;
+                if (category === 'leaf') act5Placed[plantKey] = true;
+
+                APP_STATE.selectedCard = null;
+
+                // Check finish for Act3 / Act5
+                const placedCount = Object.keys(category === 'stem' ? act3Placed : act5Placed).length;
+                if (placedCount === 4) {
+                    setTimeout(() => {
+                        AudioEngine.playChime('sparkle');
+                        AudioEngine.speak('네 가지 식물을 모두 알맞게 분류했어요! 아주 잘했습니다!');
+                        setTimeout(navigateNextStep, 1500);
+                    }, 800);
+                }
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('다시 한번 살펴볼까요? 다른 상자에 넣어 보세요.');
+                showLiveFeedback('다시 한번 생각해 볼까요?', false);
+                registerError(`${category}Classify`, `${plant.name} ${category} 분류 오류`);
+                const originCard = document.getElementById(`card-${actType}-${plantKey}`);
+                if (originCard) {
+                    originCard.classList.add('anim-shake');
+                    setTimeout(() => originCard.classList.remove('anim-shake'), 600);
+                }
+            }
+        }
+
+        // ------------------ Activity 4: 잎 관찰하기 ------------------
+        function inspectLeaf(type) {
+            AudioEngine.playChime('sparkle');
+            if (type === 'eggplant') {
+                const zoom = document.getElementById('zoom-eggplant');
+                zoom.classList.add('scale-125');
+                setTimeout(() => zoom.classList.remove('scale-125'), 600);
+                AudioEngine.speak('가지의 잎은 둥글고 넓어요.');
+            } else {
+                const zoom = document.getElementById('zoom-foxtail');
+                zoom.classList.add('scale-125');
+                setTimeout(() => zoom.classList.remove('scale-125'), 600);
+                AudioEngine.speak('강아지풀의 잎은 길고 가늘어요.');
+            }
+        }
+
+        function answerAct4(choice) {
+            if (choice === 'eggplant') {
+                AudioEngine.playChime('success');
+                AudioEngine.speak('맞았어요! 가지의 잎은 둥글고 넓은 모양입니다. 참 잘했어요!');
+                showLiveFeedback('🎉 정답입니다! 가지 잎은 둥글고 넓어요!');
+                registerSuccess('leafObserve', '둥글고 넓은 잎 찾기(가지 vs 강아지풀)');
+                createSparkleAt(document.getElementById('card-leaf-eggplant'));
+                setTimeout(() => navigateNextStep(), 2000);
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 살펴볼까요? 넓고 둥근 잎을 찾아보세요.');
+                showLiveFeedback('🤔 다시 한번 살펴볼까요?', false);
+                registerError('leafObserve', '둥글고 넓은 잎 찾기(가지 vs 강아지풀)');
+                const card = document.getElementById('card-leaf-foxtail');
+                card.classList.add('anim-shake');
+                setTimeout(() => card.classList.remove('anim-shake'), 600);
+            }
+        }
+
+        // ------------------ Activity 5: 잎 모양 분류 ------------------
+        const ACT5_PLANTS = ['lotus', 'bean', 'rice', 'pine'];
+        let act5Placed = {};
+
+        function initAct5() {
+            act5Placed = {};
+            APP_STATE.selectedCard = null;
+            document.getElementById('box-leaf-round-items').innerHTML = '';
+            document.getElementById('box-leaf-thin-items').innerHTML = '';
+            const tray = document.getElementById('tray-leaf-cards');
+            tray.innerHTML = '';
+
+            ACT5_PLANTS.forEach(pKey => {
+                const p = PLANT_DATABASE[pKey];
+                const card = document.createElement('div');
+                card.id = `card-act5-${pKey}`;
+                card.draggable = true;
+                card.ondragstart = (e) => e.dataTransfer.setData('plantKey', pKey);
+                card.onclick = () => handleCardSelect(pKey, 'act5');
+                card.className = 'plant-card w-44 p-4 border-4 border-emerald-300';
+                card.innerHTML = `
+                    <div class="text-7xl mb-2">${p.emoji}</div>
+                    <p class="font-jua text-2xl text-slate-800">${p.name}</p>
+                `;
+                tray.appendChild(card);
+            });
+        }
+
+        // ------------------ Activity 6: 바구니 담기 ------------------
+        const ACT6_POOL = [
+            {
+                instruction: '이곳에 "잎이 얇고 긴 식물"을 모두 넣어 주세요.',
+                boxTitle: '🌾 잎이 얇고 긴 식물 바구니',
+                filterProp: 'leafType',
+                filterValue: 'thin',
+                candidates: ['lotus', 'rice', 'bean', 'pine']
+            },
+            {
+                instruction: '이곳에 "줄기가 굵고 곧은 식물"을 모두 넣어 주세요.',
+                boxTitle: '🌳 줄기가 굵은 식물 바구니',
+                filterProp: 'stemType',
+                filterValue: 'thick',
+                candidates: ['bamboo', 'morningglory', 'pine', 'pumpkin']
+            }
+        ];
+        let currentAct6Data = null;
+        let act6CorrectPlaced = 0;
+        let act6TargetTotal = 0;
+
+        function initAct6() {
+            // Randomly select one mission
+            currentAct6Data = ACT6_POOL[Math.floor(Math.random() * ACT6_POOL.length)];
+            document.getElementById('act6-instruction-text').textContent = `"${currentAct6Data.instruction}"`;
+            document.getElementById('act6-target-title').textContent = currentAct6Data.boxTitle;
+            document.getElementById('act6-target-items').innerHTML = '';
+            APP_STATE.selectedCard = null;
+
+            act6CorrectPlaced = 0;
+            act6TargetTotal = currentAct6Data.candidates.filter(
+                k => PLANT_DATABASE[k][currentAct6Data.filterProp] === currentAct6Data.filterValue
+            ).length;
+
+            const tray = document.getElementById('act6-candidate-tray');
+            tray.innerHTML = '';
+
+            currentAct6Data.candidates.forEach(pKey => {
+                const p = PLANT_DATABASE[pKey];
+                const card = document.createElement('div');
+                card.id = `card-act6-${pKey}`;
+                card.onclick = () => handleCardSelect(pKey, 'act6');
+                card.className = 'plant-card w-44 p-4 border-4 border-blue-300';
+                card.innerHTML = `
+                    <div class="text-7xl mb-2">${p.emoji}</div>
+                    <p class="font-jua text-2xl text-slate-800">${p.name}</p>
+                `;
+                tray.appendChild(card);
+            });
+        }
+
+        function handleAct6TargetBoxClick() {
+            if (!APP_STATE.selectedCard) {
+                AudioEngine.speak('먼저 아래의 식물 카드를 선택해 주세요.');
+                return;
+            }
+            const { plantKey } = APP_STATE.selectedCard;
+            const plant = PLANT_DATABASE[plantKey];
+            const isMatch = plant[currentAct6Data.filterProp] === currentAct6Data.filterValue;
+
+            if (isMatch) {
+                AudioEngine.playChime('success');
+                AudioEngine.speak(`맞았어요! ${plant.name}을 바구니에 담았어요!`);
+                showLiveFeedback(`✨ ${plant.name} 쏙 담기 성공!`);
+                registerSuccess('filterBasket', `바구니 담기 (${plant.name})`);
+
+                const boxItems = document.getElementById('act6-target-items');
+                const badge = document.createElement('div');
+                badge.className = 'p-3 bg-blue-50 rounded-2xl shadow border-2 border-blue-400 flex items-center gap-2 anim-pop';
+                badge.innerHTML = `<span class="text-4xl">${plant.emoji}</span> <span class="font-jua text-xl text-blue-900">${plant.name}</span>`;
+                boxItems.appendChild(badge);
+
+                document.getElementById(`card-act6-${plantKey}`).classList.add('placed');
+                APP_STATE.selectedCard = null;
+                act6CorrectPlaced++;
+
+                if (act6CorrectPlaced >= act6TargetTotal) {
+                    setTimeout(() => {
+                        AudioEngine.playChime('sparkle');
+                        AudioEngine.speak('알맞은 식물을 모두 바구니에 담았습니다! 참 잘했어요!');
+                        setTimeout(navigateNextStep, 1500);
+                    }, 800);
+                }
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 생각해 볼까요? 조건에 맞는 특징인지 확인해 보세요.');
+                showLiveFeedback('조건에 맞지 않아요. 다시 생각해 볼까요?', false);
+                registerError('filterBasket', `바구니 담기 오류 (${plant.name})`);
+                const originCard = document.getElementById(`card-act6-${plantKey}`);
+                if (originCard) {
+                    originCard.classList.add('anim-shake');
+                    setTimeout(() => originCard.classList.remove('anim-shake'), 600);
+                }
+            }
+        }
+
+        // ------------------ Activity 7: 식물 탐정 ------------------
+        const ACT7_QUESTIONS = [
+            {
+                hintVoice: '나는 다른 물체를 빙빙 감으며 길게 자라는 줄기를 가지고 있어요. 나는 누구일까요?',
+                hintText: '"나는 다른 나무나 기둥을 감으며 자라요!"',
+                clueEmoji: '🌺',
+                correctKey: 'morningglory',
+                options: ['sunflower', 'morningglory', 'pine']
+            },
+            {
+                hintVoice: '나는 연못에 떠 있는 둥글고 아주 넓은 잎을 가지고 있어요. 나는 누구일까요?',
+                hintText: '"나는 잎이 둥글고 아주 넓어요!"',
+                clueEmoji: '🪷',
+                correctKey: 'lotus',
+                options: ['foxtail', 'lotus', 'bamboo']
+            }
+        ];
+        let currentAct7 = null;
+
+        function initAct7() {
+            currentAct7 = ACT7_QUESTIONS[Math.floor(Math.random() * ACT7_QUESTIONS.length)];
+            document.getElementById('detective-clue-icon').textContent = currentAct7.clueEmoji;
+            document.getElementById('detective-hint-text').textContent = currentAct7.hintText;
+
+            const optContainer = document.getElementById('detective-options');
+            optContainer.innerHTML = '';
+
+            currentAct7.options.forEach(pKey => {
+                const p = PLANT_DATABASE[pKey];
+                const card = document.createElement('div');
+                card.id = `card-act7-${pKey}`;
+                card.onclick = () => answerAct7(pKey);
+                card.className = 'plant-card w-48 p-5 border-4 border-amber-300 hover:border-amber-500';
+                card.innerHTML = `
+                    <div class="text-8xl mb-3">${p.emoji}</div>
+                    <p class="font-jua text-3xl text-slate-800">${p.name}</p>
+                `;
+                optContainer.appendChild(card);
+            });
+        }
+
+        function answerAct7(choiceKey) {
+            if (choiceKey === currentAct7.correctKey) {
+                AudioEngine.playChime('success');
+                const p = PLANT_DATABASE[choiceKey];
+                AudioEngine.speak(`정답입니다! 정답은 ${p.name}이었습니다! 탐정 임무 성공!`);
+                showLiveFeedback(`🕵️ 탐정 성공! 정답은 ${p.name}입니다!`);
+                registerSuccess('detective', `식물 탐정 (${p.name})`);
+                createSparkleAt(document.getElementById(`card-act7-${choiceKey}`));
+                setTimeout(() => navigateNextStep(), 2000);
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 단서를 들어볼까요? 다시 생각해 보세요.');
+                showLiveFeedback('다시 한번 생각해 볼까요?', false);
+                registerError('detective', `식물 탐정 오류 (${choiceKey})`);
+                const card = document.getElementById(`card-act7-${choiceKey}`);
+                if (card) {
+                    card.classList.add('anim-shake');
+                    setTimeout(() => card.classList.remove('anim-shake'), 600);
+                }
+            }
+        }
+
+        // ------------------ Summary Quiz (4 Questions) ------------------
+        const SUMMARY_QUESTIONS = [
+            {
+                q: '줄기가 굵은 모양인 식물을 찾아보세요.',
+                correct: 'pine',
+                options: ['morningglory', 'pine', 'pumpkin']
+            },
+            {
+                q: '줄기가 가는 모양인 식물을 찾아보세요.',
+                correct: 'morningglory',
+                options: ['bamboo', 'pine', 'morningglory']
+            },
+            {
+                q: '둥글고 넓은 잎을 가진 식물을 찾아보세요.',
+                correct: 'lotus',
+                options: ['rice', 'lotus', 'pine']
+            },
+            {
+                q: '얇고 긴 잎을 가진 식물을 찾아보세요.',
+                correct: 'foxtail',
+                options: ['eggplant', 'foxtail', 'bean']
+            }
+        ];
+
+        function initSummaryQuiz() {
+            APP_STATE.summaryQuizIndex = 0;
+            renderSummaryQuestion();
+        }
+
+        function renderSummaryQuestion() {
+            const idx = APP_STATE.summaryQuizIndex;
+            const data = SUMMARY_QUESTIONS[idx];
+
+            document.getElementById('summary-q-num').textContent = idx + 1;
+            document.getElementById('summary-q-instruction').textContent = data.q;
+            AudioEngine.speak(`${idx + 1}번 문제입니다. ${data.q}`);
+
+            const container = document.getElementById('summary-options-container');
+            container.innerHTML = '';
+
+            data.options.forEach(pKey => {
+                const p = PLANT_DATABASE[pKey];
+                const card = document.createElement('div');
+                card.id = `card-summary-${pKey}`;
+                card.onclick = () => answerSummaryQuiz(pKey, data.correct);
+                card.className = 'plant-card p-6 border-4 border-emerald-300 hover:border-emerald-500 flex flex-col items-center';
+                card.innerHTML = `
+                    <div class="text-8xl mb-3">${p.emoji}</div>
+                    <p class="font-jua text-3xl text-emerald-900">${p.name}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function answerSummaryQuiz(choiceKey, correctKey) {
+            const qIdx = APP_STATE.summaryQuizIndex;
+            const p = PLANT_DATABASE[choiceKey];
+
+            if (choiceKey === correctKey) {
+                AudioEngine.playChime('success');
+                AudioEngine.speak(`맞았어요! ${p.name}이 정답입니다!`);
+                showLiveFeedback(`✨ 맞았어요! ${p.name}!`);
+                registerSuccess('summaryQuiz', `정리 문제 ${qIdx + 1}번 (${p.name})`);
+                createSparkleAt(document.getElementById(`card-summary-${choiceKey}`));
+
+                setTimeout(() => {
+                    if (APP_STATE.summaryQuizIndex < SUMMARY_QUESTIONS.length - 1) {
+                        APP_STATE.summaryQuizIndex++;
+                        renderSummaryQuestion();
+                    } else {
+                        // Complete lesson!
+                        markSessionCompleted();
+                        switchScreen(9); // Finish screen
+                    }
+                }, 1600);
+            } else {
+                AudioEngine.playChime('wrong');
+                AudioEngine.speak('한 번 더 생각해 볼까요? 다른 식물을 골라보세요.');
+                showLiveFeedback('다시 한번 생각해 볼까요?', false);
+                registerError('summaryQuiz', `정리 문제 ${qIdx + 1}번 오류 (${p.name})`);
+                const card = document.getElementById(`card-summary-${choiceKey}`);
+                if (card) {
+                    card.classList.add('anim-shake');
+                    setTimeout(() => card.classList.remove('anim-shake'), 600);
+                }
+            }
+        }
+
+        // ------------------ Finish Screen ------------------
+        function initFinishScreen() {
+            const name = APP_STATE.currentStudent.name || '우리';
+            document.getElementById('finish-student-title').textContent = `${name} 어린이, 참 잘했어요!`;
+            document.getElementById('finish-student-desc').textContent = `${name}아, 오늘 식물 탐험을 훌륭하게 모두 끝냈어요!`;
+            AudioEngine.playChime('sparkle');
+            setTimeout(() => {
+                AudioEngine.speak(`${name}아, 오늘 식물 탐험을 모두 끝냈어요! 참 잘했어요!`);
+            }, 400);
+        }
+
+        /* ==========================================================================
+           7. Screen Ingress Router & Auto Voice Guidance
+           ========================================================================== */
+        function setupCurrentScreenContent(stepIndex) {
+            switch (stepIndex) {
+                case 1:
+                    AudioEngine.speak('식물의 줄기는 모두 똑같이 생겼을까요? 해바라기와 나팔꽃의 줄기를 자세히 살펴보세요.');
+                    break;
+                case 2:
+                    initAct2();
+                    AudioEngine.speak('줄기와 특징을 바르게 연결해 볼까요? 왼쪽 줄기를 누르고 알맞은 설명을 눌러주세요.');
+                    break;
+                case 3:
+                    initAct3();
+                    AudioEngine.speak('식물의 줄기 모양에 따라 두 상자로 나누어 분류해 보세요.');
+                    break;
+                case 4:
+                    AudioEngine.speak('잎은 어떻게 생겼을까요? 가지와 강아지풀의 잎을 터치해서 살펴보세요.');
+                    break;
+                case 5:
+                    initAct5();
+                    AudioEngine.speak('식물의 잎 모양에 따라 알맞은 상자에 분류해 보세요.');
+                    break;
+                case 6:
+                    initAct6();
+                    setTimeout(() => {
+                        AudioEngine.speak(currentAct6Data.instruction);
+                    }, 200);
+                    break;
+                case 7:
+                    initAct7();
+                    setTimeout(() => {
+                        AudioEngine.speak(currentAct7.hintVoice);
+                    }, 200);
+                    break;
+                case 8:
+                    initSummaryQuiz();
+                    break;
+                case 9:
+                    initFinishScreen();
+                    break;
+                case 10:
+                    renderTeacherDashboard();
+                    break;
+            }
+        }
+
+        function speakCurrentInstruction() {
+            setupCurrentScreenContent(APP_STATE.currentStepIndex);
+        }
+
+        /* ==========================================================================
+           8. Teacher Dashboard & CSV Export Analytics
+           ========================================================================== */
+        function renderTeacherDashboard() {
+            const records = getStoredRecords();
+            const tbody = document.getElementById('teacher-table-body');
+            tbody.innerHTML = '';
+
+            let totalStudents = records.length;
+            let completedCount = 0;
+            let totalClassErrors = 0;
+            let sumScores = 0;
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="p-8 text-slate-400 font-bold">아직 등록된 학생 평가 기록이 없습니다.</td></tr>`;
+            } else {
+                records.forEach((rec, idx) => {
+                    if (rec.completed) completedCount++;
+                    totalClassErrors += (rec.totalErrors || 0);
+                    sumScores += parseFloat(rec.score || 10);
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+                    const dateStr = rec.startTime ? new Date(rec.startTime).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+                    tr.innerHTML = `
+                        <td class="p-4 font-bold text-slate-500">${idx + 1}</td>
+                        <td class="p-4 font-bold text-slate-800">${rec.name}</td>
+                        <td class="p-4 text-sm text-slate-500">${dateStr}</td>
+                        <td class="p-4 ${rec.errors.stemObserve > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">${rec.errors.stemObserve || 0}</td>
+                        <td class="p-4 ${rec.errors.stemClassify > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">${rec.errors.stemClassify || 0}</td>
+                        <td class="p-4 ${rec.errors.leafObserve > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">${rec.errors.leafObserve || 0}</td>
+                        <td class="p-4 ${rec.errors.leafClassify > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">${rec.errors.leafClassify || 0}</td>
+                        <td class="p-4 ${rec.errors.summaryQuiz > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">${rec.errors.summaryQuiz || 0}</td>
+                        <td class="p-4 font-bold text-rose-600">${rec.totalErrors || 0}회</td>
+                        <td class="p-4 text-slate-600">${rec.attempts || 0}회</td>
+                        <td class="p-4">
+                            <span class="px-3 py-1.5 rounded-full font-jua text-xl ${getScoreBadgeClass(rec.score)}">
+                                ${rec.score}점
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            ${rec.completed 
+                                ? '<span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-xl font-bold text-sm">완료</span>' 
+                                : '<span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-xl font-bold text-sm">진행중</span>'}
+                        </td>
+                        <td class="p-4">
+                            <button onclick="openStudentDetailModal(${idx})" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-sm transition">
+                                🔍 분석
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Summary Stats Calculation
+            document.getElementById('stat-total-students').textContent = `${totalStudents}명`;
+            document.getElementById('stat-completed-students').textContent = `${completedCount}명`;
+            const avg = totalStudents > 0 ? (sumScores / totalStudents).toFixed(1) : '10.0';
+            document.getElementById('stat-class-avg').textContent = `${avg}점`;
+            document.getElementById('stat-total-errors').textContent = `${totalClassErrors}회`;
+        }
+
+        function getScoreBadgeClass(score) {
+            const s = parseFloat(score);
+            if (s >= 9.0) return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+            if (s >= 7.0) return 'bg-blue-100 text-blue-800 border border-blue-300';
+            if (s >= 5.0) return 'bg-amber-100 text-amber-800 border border-amber-300';
+            return 'bg-rose-100 text-rose-800 border border-rose-300';
+        }
+
+        function getScoreGradeLabel(score) {
+            const s = parseFloat(score);
+            if (s >= 9.0) return '매우 잘함 (9~10점)';
+            if (s >= 7.0) return '잘함 (7~8.5점)';
+            if (s >= 5.0) return '조금 더 연습 (5~6.5점)';
+            return '반복 학습 필요 (0~4.5점)';
+        }
+
+        function openStudentDetailModal(idx) {
+            const records = getStoredRecords();
+            const rec = records[idx];
+            if (!rec) return;
+
+            document.getElementById('modal-student-name').textContent = `📊 ${rec.name} 어린이 학습 진단 결과`;
+
+            // Error bias analysis
+            const stemErr = (rec.errors.stemObserve || 0) + (rec.errors.stemClassify || 0);
+            const leafErr = (rec.errors.leafObserve || 0) + (rec.errors.leafClassify || 0);
+            
+            let diagnosticSummary = '';
+            if (rec.totalErrors === 0) {
+                diagnosticSummary = '🌟 두 영역(줄기 및 잎) 모두 오답 없이 안정적으로 완벽하게 수행하였습니다.';
+            } else if (stemErr > leafErr) {
+                diagnosticSummary = '⚠️ 줄기의 굵기 및 곧은/감는 모양 구분 활동에서 오답이 상대적으로 많았습니다. 실물 줄기 관찰 기회를 추가로 권장합니다.';
+            } else if (leafErr > stemErr) {
+                diagnosticSummary = '⚠️ 잎의 넓고 둥근 모양과 얇고 긴 모양 분류에서 어려움을 겪었습니다. 잎 윤곽선 따라그리기 지도를 추천합니다.';
+            } else {
+                diagnosticSummary = '💡 줄기와 잎 영역 전반에 걸쳐 고른 정답률을 보였으며, 반복 지도를 통해 직관적인 구분을 강화할 수 있습니다.';
+            }
+
+            let logItems = '';
+            if (rec.historyLog && rec.historyLog.length > 0) {
+                logItems = rec.historyLog.map(h => `
+                    <li class="flex items-center justify-between text-base py-1 border-b border-slate-100">
+                        <span class="text-slate-500">${h.time}</span>
+                        <span class="font-bold text-slate-700">${h.question}</span>
+                        <span class="${h.result === 'correct' ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}">
+                            ${h.result === 'correct' ? '⭕ 정답' : '❌ 오류'}
+                        </span>
+                    </li>
+                `).join('');
+            } else {
+                logItems = '<li class="text-slate-400 text-sm">기록된 상세 로그가 없습니다.</li>';
+            }
+
+            const modalContent = document.getElementById('modal-detail-content');
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-500 text-sm block">10점 만점 평가 점수</span>
+                        <span class="font-jua text-4xl text-emerald-700">${rec.score}점</span>
+                        <span class="text-xs text-slate-500 block">(${getScoreGradeLabel(rec.score)})</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-sm block">총 시도 / 오류</span>
+                        <span class="font-jua text-4xl text-slate-800">${rec.attempts || 0}회 / <span class="text-rose-600">${rec.totalErrors || 0}회</span></span>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <h4 class="font-bold text-emerald-900 text-lg mb-1">교사용 자동 분석 코멘트</h4>
+                    <p class="text-emerald-800 font-medium leading-relaxed">${diagnosticSummary}</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-slate-800 text-lg mb-2">영역별 오류 분포</h4>
+                    <div class="grid grid-cols-2 gap-2 text-base">
+                        <div class="p-2 bg-slate-100 rounded-xl flex justify-between">
+                            <span>줄기 관찰 및 분류:</span>
+                            <span class="font-bold text-rose-600">${stemErr}회</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl flex justify-between">
+                            <span>잎 관찰 및 분류:</span>
+                            <span class="font-bold text-rose-600">${leafErr}회</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-slate-800 text-lg mb-2">실시간 풀이 히스토리</h4>
+                    <ul class="max-h-48 overflow-y-auto pr-2 flex flex-col gap-1">
+                        ${logItems}
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('student-detail-modal').classList.remove('hidden');
+        }
+
+        function closeStudentDetailModal() {
+            document.getElementById('student-detail-modal').classList.add('hidden');
+        }
+
+        function downloadResultsCSV() {
+            const records = getStoredRecords();
+            if (records.length === 0) {
+                AudioEngine.speak('저장할 평가 데이터가 없습니다.');
+                return;
+            }
+
+            let csvContent = '\uFEFF'; // UTF-8 BOM for Korean Excel compatibility
+            csvContent += '번호,학생이름,활동일시,줄기관찰오류,줄기분류오류,잎관찰오류,잎분류오류,정리문제오류,총오류,총시도,10점점수,완료여부\n';
+
+            records.forEach((r, idx) => {
+                const dateStr = r.startTime ? new Date(r.startTime).toLocaleString('ko-KR') : '-';
+                const row = [
+                    idx + 1,
+                    `"${r.name}"`,
+                    `"${dateStr}"`,
+                    r.errors.stemObserve || 0,
+                    r.errors.stemClassify || 0,
+                    r.errors.leafObserve || 0,
+                    r.errors.leafClassify || 0,
+                    r.errors.summaryQuiz || 0,
+                    r.totalErrors || 0,
+                    r.attempts || 0,
+                    r.score || 10,
+                    r.completed ? '완료' : '진행중'
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `식물탐험대_수업평가결과_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            AudioEngine.playChime('sparkle');
+        }
+
+        function promptClearRecords() {
+            if (confirm('모든 학생의 평가 기록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                AudioEngine.playChime('wrong');
+                renderTeacherDashboard();
+            }
+        }
+
+        function resetAppToHome() {
+            document.getElementById('input-student-name').value = '';
+            document.getElementById('input-teacher-pw').value = '';
+            setLoginTab('student');
+            switchScreen(0);
+        }
+
+        /* ==========================================================================
+           9. Window Resize & Lifecycle Events
+           ========================================================================== */
+        window.addEventListener('resize', () => {
+            if (APP_STATE.currentStepIndex === 2) {
+                redrawAct2Lines();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            // Initial view
+            switchScreen(0);
+        });
+    </script>
+</body>
+</html>
